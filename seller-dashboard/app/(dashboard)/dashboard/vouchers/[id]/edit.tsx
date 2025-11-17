@@ -1,5 +1,9 @@
 // pages/dashboard/vouchers/[id]/edit.tsx
-// Fixed: Wrapped mutationFn to accept { id, data } and call service.updateVoucher(id, data)
+// New: Update page, similar to Create but loads data with useQuery.
+// - Pre-populate form.
+// - Use updateMutation.
+// - For user_use: Display as comma-separated string.
+// - Validate on submit.
 
 "use client";
 
@@ -25,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -37,20 +40,18 @@ import {
   Users,
   Package,
   ArrowLeft,
+  AlertCircle,
 } from "lucide-react";
 import type { VoucherFormData, Voucher } from "@/types/voucher";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 export default function UpdateVoucherPage() {
   const params = useParams();
   const router = useRouter();
   const voucherId = params.id as string;
 
-  const [formData, setFormData] = useState<
-    VoucherFormData & { user_use_str: string }
-  >({
+  const [formData, setFormData] = useState<VoucherFormData>({
     name: "",
     voucher_code: "",
     discount_type: "PERCENTAGE",
@@ -64,21 +65,15 @@ export default function UpdateVoucherPage() {
     total_quantity: 0,
     max_usage_per_user: 1,
     user_use: [],
-    user_use_str: "",
     is_active: true,
   });
 
-  const {
-    data: voucher,
-    isLoading,
-    error,
-  } = useQuery<Voucher>({
+  const { data: voucher, isLoading } = useQuery({
     queryKey: ["voucher", voucherId],
     queryFn: () => voucherService.getVoucherById(voucherId),
     enabled: !!voucherId,
   });
 
-  // Load form data when voucher is fetched
   useEffect(() => {
     if (voucher) {
       setFormData({
@@ -95,7 +90,6 @@ export default function UpdateVoucherPage() {
         total_quantity: voucher.total_quantity,
         max_usage_per_user: voucher.max_usage_per_user,
         user_use: voucher.user_use || [],
-        user_use_str: voucher.user_use?.join(", ") || "",
         is_active: voucher.is_active,
       });
     }
@@ -128,12 +122,21 @@ export default function UpdateVoucherPage() {
     }
     if (
       formData.audience_type === "ASSIGNED" &&
-      (!formData.user_use_str || formData.user_use_str.trim() === "")
+      (!formData.user_use || formData.user_use.length === 0)
     ) {
       toast.error("Vui lòng nhập danh sách user IDs cho audience ASSIGNED");
       return;
     }
-    updateVoucherMutation.mutate({ id: voucherId, data: formData });
+    const userUseArray = Array.isArray(formData.user_use)
+      ? formData.user_use
+      : (formData.user_use || "")
+          .split(",")
+          .map((u) => u.trim())
+          .filter(Boolean);
+    updateVoucherMutation.mutate({
+      id: voucherId,
+      data: { ...formData, user_use: userUseArray },
+    });
   };
 
   const handleChange = (
@@ -157,15 +160,12 @@ export default function UpdateVoucherPage() {
   };
 
   const handleUserUseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const userIds = value
-      .split(",")
-      .map((id) => id.trim())
-      .filter((id) => id.length > 0);
     setFormData({
       ...formData,
-      user_use_str: value,
-      user_use: userIds,
+      user_use: (e.target.value || "")
+        .split(",")
+        .map((u) => u.trim())
+        .filter(Boolean),
     });
   };
 
@@ -176,23 +176,20 @@ export default function UpdateVoucherPage() {
     });
   };
 
-  if (error) {
+  if (isLoading) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Lỗi</AlertTitle>
-        <AlertDescription>
-          Không thể tải thông tin voucher. Vui lòng thử lại.
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-6">
+        <Skeleton className="h-64 w-full" />
+      </div>
     );
   }
 
-  if (isLoading || !voucher) {
+  if (!voucher) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-96 w-full" />
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Không tìm thấy voucher</AlertTitle>
+      </Alert>
     );
   }
 
@@ -225,6 +222,7 @@ export default function UpdateVoucherPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Same form structure as Create, but with is_active toggle */}
             {/* Basic Info */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
@@ -252,7 +250,8 @@ export default function UpdateVoucherPage() {
               </div>
             </div>
 
-            {/* Discount Settings */}
+            {/* Discount Settings - same as Create */}
+
             <div className="space-y-4 p-4 border rounded-lg">
               <h3 className="font-semibold flex items-center gap-2">
                 <Percent className="h-4 w-4" /> Cài đặt giảm giá
@@ -318,7 +317,8 @@ export default function UpdateVoucherPage() {
               </div>
             </div>
 
-            {/* Apply Settings */}
+            {/* Apply Settings - same */}
+
             <div className="space-y-4 p-4 border rounded-lg">
               <h3 className="font-semibold flex items-center gap-2">
                 <Package className="h-4 w-4" /> Áp dụng cho
@@ -363,7 +363,8 @@ export default function UpdateVoucherPage() {
               </div>
             </div>
 
-            {/* Audience & Usage */}
+            {/* Audience & Usage - same, plus is_active toggle */}
+
             <div className="space-y-4 p-4 border rounded-lg">
               <h3 className="font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4" /> Đối tượng & Số lượng
@@ -397,7 +398,7 @@ export default function UpdateVoucherPage() {
                     <Input
                       id="user_use"
                       name="user_use"
-                      value={formData.user_use_str}
+                      value={formData.user_use?.join(", ") || ""}
                       onChange={handleUserUseChange}
                       placeholder="user_001, user_002"
                     />
@@ -437,10 +438,12 @@ export default function UpdateVoucherPage() {
 
               {/* Active Toggle */}
               <div className="flex items-center space-x-2 pt-4 border-t">
-                <Switch
+                <input
                   id="is_active"
+                  type="checkbox"
                   checked={formData.is_active}
-                  onCheckedChange={handleIsActiveChange}
+                  onChange={(e) => handleIsActiveChange(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <Label
                   htmlFor="is_active"
@@ -451,7 +454,8 @@ export default function UpdateVoucherPage() {
               </div>
             </div>
 
-            {/* Dates */}
+            {/* Dates - same */}
+
             <div className="space-y-4 p-4 border rounded-lg">
               <h3 className="font-semibold flex items-center gap-2">
                 <Calendar className="h-4 w-4" /> Thời gian hiệu lực

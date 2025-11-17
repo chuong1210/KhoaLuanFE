@@ -1,59 +1,90 @@
-"use client"
+// components/ShopRegistrationPage.tsx
+// Updated: Changed shopLogo and shopBanner inputs to file type (accept="image/*").
+// FormData now holds File objects.
+// Removed URL placeholders; added accept and multiple=false.
+// In mutation, pass formData directly (service handles File upload).
+// Added onChange for file inputs to set File | null.
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useMutation } from "@tanstack/react-query"
-import { shopService } from "@/services/shop-service"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
-import { Loader2, Store } from "lucide-react"
-import type { ShopFormData } from "@/types/shop"
+"use client";
+
+import React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { shopService } from "@/services/shop-service";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { Loader2, Store, Image as ImageIcon } from "lucide-react";
+import type { ShopFormData } from "@/types/shop";
 
 export default function ShopRegistrationPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [formData, setFormData] = useState<ShopFormData>({
     shopName: "",
     shopDescription: "",
-    shopLogo: "",
-    shopBanner: "",
+    shopLogo: undefined, // File | undefined
+    shopBanner: undefined, // File | undefined
     shopEmail: "",
     shopPhone: "",
-    shopAddressId: "",
+    shopAddress: "",
     shopPersonalIdentifyId: "",
+    shopAddressId: "",
     shopTaxId: "",
-  })
+  });
 
   const createShopMutation = useMutation({
-    mutationFn: shopService.createShop,
+    mutationFn: (data: ShopFormData) => shopService.createShopWithTax(data),
     onSuccess: () => {
       toast.success("Đã gửi yêu cầu đăng ký shop", {
         description: "Vui lòng chờ admin phê duyệt",
-      })
-      router.push("/dashboard/shop")
+      });
+      router.push("/dashboard/shop");
     },
     onError: (error: any) => {
       toast.error("Đăng ký shop thất bại", {
         description: error.message || "Vui lòng thử lại sau",
-      })
+      });
     },
-  })
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    createShopMutation.mutate(formData)
-  }
+    e.preventDefault();
+    if (!formData.shopTaxId) {
+      toast.error("Vui lòng nhập mã số thuế");
+      return;
+    }
+    createShopMutation.mutate(formData);
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleTextChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
-    })
-  }
+    });
+  };
+
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "shopLogo" | "shopBanner"
+  ) => {
+    const file = e.target.files?.[0] || undefined;
+    setFormData({
+      ...formData,
+      [field]: file,
+    });
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -63,7 +94,9 @@ export default function ShopRegistrationPage() {
         </div>
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Đăng ký Shop</h2>
-          <p className="text-muted-foreground">Điền thông tin để đăng ký cửa hàng của bạn</p>
+          <p className="text-muted-foreground">
+            Điền thông tin để đăng ký cửa hàng của bạn
+          </p>
         </div>
       </div>
 
@@ -71,7 +104,8 @@ export default function ShopRegistrationPage() {
         <CardHeader>
           <CardTitle>Thông tin cửa hàng</CardTitle>
           <CardDescription>
-            Vui lòng điền đầy đủ thông tin. Yêu cầu của bạn sẽ được gửi đến admin để phê duyệt.
+            Vui lòng điền đầy đủ thông tin. Yêu cầu của bạn sẽ được gửi đến
+            admin để phê duyệt.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -82,8 +116,9 @@ export default function ShopRegistrationPage() {
               <Input
                 id="shopName"
                 name="shopName"
+                type="text"
                 value={formData.shopName}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 placeholder="Nhập tên cửa hàng"
                 required
               />
@@ -91,46 +126,58 @@ export default function ShopRegistrationPage() {
 
             {/* Shop Description */}
             <div className="space-y-2">
-              <Label htmlFor="shopDescription">Mô tả cửa hàng *</Label>
+              <Label htmlFor="shopDescription">Mô tả cửa hàng</Label>
               <Textarea
                 id="shopDescription"
                 name="shopDescription"
                 value={formData.shopDescription}
-                onChange={handleChange}
+                onChange={handleTextChange}
                 placeholder="Mô tả về cửa hàng của bạn"
                 rows={4}
-                required
               />
             </div>
 
             {/* Shop Logo */}
             <div className="space-y-2">
-              <Label htmlFor="shopLogo">Logo cửa hàng (URL) *</Label>
+              <Label htmlFor="shopLogo">Logo cửa hàng</Label>
               <Input
                 id="shopLogo"
                 name="shopLogo"
-                value={formData.shopLogo}
-                onChange={handleChange}
-                placeholder="https://example.com/logo.jpg"
-                type="url"
-                required
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, "shopLogo")}
               />
-              <p className="text-sm text-muted-foreground">Nhập URL hình ảnh logo của cửa hàng</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <ImageIcon className="h-4 w-4" />
+                Chọn file hình ảnh logo của cửa hàng (tùy chọn)
+              </p>
+              {formData.shopLogo && typeof formData.shopLogo === "object" && (
+                <p className="text-sm text-green-600">
+                  Đã chọn: {(formData.shopLogo as File).name}
+                </p>
+              )}
             </div>
 
             {/* Shop Banner */}
             <div className="space-y-2">
-              <Label htmlFor="shopBanner">Banner cửa hàng (URL) *</Label>
+              <Label htmlFor="shopBanner">Banner cửa hàng</Label>
               <Input
                 id="shopBanner"
                 name="shopBanner"
-                value={formData.shopBanner}
-                onChange={handleChange}
-                placeholder="https://example.com/banner.jpg"
-                type="url"
-                required
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, "shopBanner")}
               />
-              <p className="text-sm text-muted-foreground">Nhập URL hình ảnh banner của cửa hàng</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <ImageIcon className="h-4 w-4" />
+                Chọn file hình ảnh banner của cửa hàng (tùy chọn)
+              </p>
+              {formData.shopBanner &&
+                typeof formData.shopBanner === "object" && (
+                  <p className="text-sm text-green-600">
+                    Đã chọn: {(formData.shopBanner as File).name}
+                  </p>
+                )}
             </div>
 
             {/* Contact Info */}
@@ -142,7 +189,7 @@ export default function ShopRegistrationPage() {
                   name="shopEmail"
                   type="email"
                   value={formData.shopEmail}
-                  onChange={handleChange}
+                  onChange={handleTextChange}
                   placeholder="shop@example.com"
                   required
                 />
@@ -155,7 +202,7 @@ export default function ShopRegistrationPage() {
                   name="shopPhone"
                   type="tel"
                   value={formData.shopPhone}
-                  onChange={handleChange}
+                  onChange={handleTextChange}
                   placeholder="0123456789"
                   required
                 />
@@ -164,13 +211,14 @@ export default function ShopRegistrationPage() {
 
             {/* Address */}
             <div className="space-y-2">
-              <Label htmlFor="shopAddressId">Địa chỉ *</Label>
+              <Label htmlFor="shopAddress">Địa chỉ *</Label>
               <Input
-                id="shopAddressId"
-                name="shopAddressId"
-                value={formData.shopAddressId}
-                onChange={handleChange}
-                placeholder="Nhập địa chỉ cửa hàng"
+                id="shopAddress"
+                name="shopAddress"
+                type="text"
+                value={formData.shopAddress}
+                onChange={handleTextChange}
+                placeholder="Nhập địa chỉ cửa hàng đầy đủ"
                 required
               />
             </div>
@@ -178,14 +226,14 @@ export default function ShopRegistrationPage() {
             {/* Legal Info */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="shopPersonalIdentifyId">CMND/CCCD *</Label>
+                <Label htmlFor="shopPersonalIdentifyId">CMND/CCCD</Label>
                 <Input
                   id="shopPersonalIdentifyId"
                   name="shopPersonalIdentifyId"
+                  type="text"
                   value={formData.shopPersonalIdentifyId}
-                  onChange={handleChange}
+                  onChange={handleTextChange}
                   placeholder="Số CMND/CCCD"
-                  required
                 />
               </div>
 
@@ -194,8 +242,9 @@ export default function ShopRegistrationPage() {
                 <Input
                   id="shopTaxId"
                   name="shopTaxId"
+                  type="text"
                   value={formData.shopTaxId}
-                  onChange={handleChange}
+                  onChange={handleTextChange}
                   placeholder="Mã số thuế"
                   required
                 />
@@ -204,11 +253,21 @@ export default function ShopRegistrationPage() {
 
             {/* Submit Button */}
             <div className="flex gap-4">
-              <Button type="submit" disabled={createShopMutation.isPending} className="flex-1">
-                {createShopMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button
+                type="submit"
+                disabled={createShopMutation.isPending}
+                className="flex-1"
+              >
+                {createShopMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Gửi yêu cầu đăng ký
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+              >
                 Hủy
               </Button>
             </div>
@@ -216,5 +275,5 @@ export default function ShopRegistrationPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

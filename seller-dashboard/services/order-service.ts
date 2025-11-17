@@ -1,38 +1,39 @@
-import { apiClient } from "@/lib/api/axios-instance"
-import type { ShopOrder, OrderDetail, OrderStatus } from "@/types/order"
 
-const SHOP_ORDER_API = "http://localhost:9000/api/ShopOrders"
-const ORDER_ITEM_API = "http://localhost:9000/api/OrderItems"
+// services/order-service.ts
+import axiosInstance from "@/lib/api/axios-instance";
+import type { OrderDetail, OrderStatus, OrderSearchParams, OrderSearchResponse } from "@/types/order";
+
+const ORDER_API = "http://localhost:9002/v1/orders";
 
 export const orderService = {
-  // Get all shop orders
-  getShopOrders: async (): Promise<ShopOrder[]> => {
-    const response = await apiClient.get(SHOP_ORDER_API)
-    return response.data.result || response.data
+  // Get order by ID
+  getOrderById: async (orderId: string): Promise<OrderDetail> => {
+    const response = await axiosInstance.get<{ result: OrderDetail }>(
+      `${ORDER_API}/${orderId}`
+    );
+    return response.data.result;
   },
 
-  // Get order by ID with items
-  getOrderById: async (orderId: string): Promise<OrderDetail> => {
-    const [orderResponse, itemsResponse] = await Promise.all([
-      apiClient.get(`${SHOP_ORDER_API}/${orderId}`),
-      apiClient.get(`${ORDER_ITEM_API}?orderId=${orderId}`),
-    ])
+  // Search orders with filters
+  searchOrders: async (params: OrderSearchParams): Promise<OrderSearchResponse> => {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
 
-    return {
-      ...(orderResponse.data.result || orderResponse.data),
-      items: itemsResponse.data.result || itemsResponse.data,
-    }
+    const response = await axiosInstance.get<OrderSearchResponse>(
+      `${ORDER_API}/search/detail?${queryParams.toString()}`
+    );
+    return response.data;
   },
 
   // Update order status
-  updateOrderStatus: async (orderId: string, status: OrderStatus): Promise<ShopOrder> => {
-    const response = await apiClient.put(`${SHOP_ORDER_API}/${orderId}`, { status })
-    return response.data.result || response.data
+  updateOrderStatus: async (orderId: string, status: OrderStatus): Promise<void> => {
+    await axiosInstance.put(`${ORDER_API}/callback_payment_online/${orderId}`, {
+      status,
+    });
   },
-
-  // Get orders by status
-  getOrdersByStatus: async (status: OrderStatus): Promise<ShopOrder[]> => {
-    const response = await apiClient.get(`${SHOP_ORDER_API}?status=${status}`)
-    return response.data.result || response.data
-  },
-}
+};

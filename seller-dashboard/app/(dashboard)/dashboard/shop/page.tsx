@@ -1,9 +1,20 @@
+// components/ShopManagementPage.tsx
+// Rewritten to:
+// - Use getCurrentShop query instead of getShops (more direct for user's shop).
+// - Access taxInfo.taxCode (not tax.taxCode).
+// - Use shopAddress (not shopAddressId).
+// - shopStatus: boolean -> Simple badge for active/inactive.
+// - Removed pending/rejected alerts (API uses boolean; extend if API adds status strings).
+// - Added banner display with placeholder if missing.
+// - Edit button links to a hypothetical edit page.
+// - Better loading/error states.
+// - Console.log removed.
+
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { shopService } from "@/services/shop-service";
-import { useAppSelector } from "@/store/hooks";
 import {
   Card,
   CardContent,
@@ -21,25 +32,20 @@ import {
   FileText,
   AlertCircle,
   CheckCircle,
-  Clock,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ShopManagementPage() {
   const router = useRouter();
-  // const { user } = useAppSelector((state) => state.auth)
 
   const {
-    data: shops,
+    data: currentShop,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["shops"],
-    queryFn: shopService.getShops,
+    queryKey: ["currentShop"],
+    queryFn: shopService.getCurrentShop,
   });
-
-  const currentShop = shops?.[0];
-  console.log(currentShop);
 
   useEffect(() => {
     if (!isLoading && !currentShop) {
@@ -73,32 +79,21 @@ export default function ShopManagementPage() {
     return null; // Will redirect to registration
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "approved":
-        return (
-          <Badge className="bg-success text-white">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Đã duyệt
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge variant="secondary">
-            <Clock className="mr-1 h-3 w-3" />
-            Chờ duyệt
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge variant="destructive">
-            <AlertCircle className="mr-1 h-3 w-3" />
-            Từ chối
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const getStatusBadge = (status: boolean) => {
+    if (status) {
+      return (
+        <Badge className="bg-success text-white">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          Hoạt động
+        </Badge>
+      );
     }
+    return (
+      <Badge variant="destructive">
+        <AlertCircle className="mr-1 h-3 w-3" />
+        Không hoạt động
+      </Badge>
+    );
   };
 
   return (
@@ -114,29 +109,6 @@ export default function ShopManagementPage() {
           Chỉnh sửa thông tin
         </Button>
       </div>
-
-      {/* Status Alert */}
-      {currentShop.status === "pending" && (
-        <Alert>
-          <Clock className="h-4 w-4" />
-          <AlertTitle>Đang chờ duyệt</AlertTitle>
-          <AlertDescription>
-            Cửa hàng của bạn đang được admin xem xét. Vui lòng chờ thông báo phê
-            duyệt.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {currentShop.status === "rejected" && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Yêu cầu bị từ chối</AlertTitle>
-          <AlertDescription>
-            {currentShop.feedback ||
-              "Cửa hàng của bạn chưa được phê duyệt. Vui lòng kiểm tra lại thông tin và gửi lại."}
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Shop Info Card */}
       <Card>
@@ -160,7 +132,7 @@ export default function ShopManagementPage() {
                 <CardDescription>{currentShop.shopDescription}</CardDescription>
               </div>
             </div>
-            {getStatusBadge(currentShop.status)}
+            {getStatusBadge(currentShop.shopStatus)}
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -209,7 +181,8 @@ export default function ShopManagementPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Địa chỉ
                 </p>
-                <p className="font-medium">{currentShop.shopAddressId}</p>
+                <p className="font-medium">{currentShop.shopAddress}</p>{" "}
+                {/* Updated from shopAddressId */}
               </div>
             </div>
 
@@ -219,7 +192,8 @@ export default function ShopManagementPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Mã số thuế
                 </p>
-                <p className="font-medium">{currentShop.tax.taxCode}</p>
+                <p className="font-medium">{currentShop.taxInfo?.taxCode}</p>{" "}
+                {/* Updated from tax.taxCode */}
               </div>
             </div>
           </div>
@@ -240,6 +214,20 @@ export default function ShopManagementPage() {
               </p>
               <p className="font-medium">
                 {new Date(currentShop.createdDate).toLocaleDateString("vi-VN")}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Số lượng follower
+              </p>
+              <p className="font-medium">{currentShop.followerCount}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Số dư ví
+              </p>
+              <p className="font-medium">
+                {currentShop.walletAmount.toLocaleString()} VND
               </p>
             </div>
           </div>

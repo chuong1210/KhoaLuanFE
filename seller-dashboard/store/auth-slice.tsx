@@ -85,6 +85,10 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.isInitialized = true;
     },
+    // Thêm reducer này để update shopId sau fetch
+    setShopId: (state, action: PayloadAction<string | null>) => {
+      state.shopId = action.payload;
+    },
     logout: (state) => {
       console.log("[v0] Logging out");
       state.token = null;
@@ -98,6 +102,5 @@ const authSlice = createSlice({
     },
   },
 });
-
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, setShopId, logout } = authSlice.actions; // Export thêm setShopId
 export default authSlice.reducer;

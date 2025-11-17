@@ -1,111 +1,156 @@
+// services/product-service.ts - Product API service
 import { apiClient } from "@/lib/api/axios-instance"
-import type { ProductTemp, Product, ProductFormData, Category, Brand } from "@/types/product"
+import type { 
+  Product, 
+  ProductDetail,
+  ProductListResponse,
+  CreateProductPayload,
+  UpdateProductPayload,
+  ProductFilters,
+  Brand,
+  Category
+} from "@/types/product"
 
-const PRODUCT_TEMP_API = "http://localhost:8000/api/product-temps"
-const PRODUCT_API = "http://localhost:9000/api/Products"
-const CATEGORY_API = "http://localhost:9000/api/Categories"
-const BRAND_API = "http://localhost:9000/api/Brands"
+const PRODUCT_API_BASE = "http://localhost:9001/v1/product"
+const MEDIA_API_BASE = "http://localhost:9001/v1/media"
 
 export const productService = {
-  // ============================
-  // 📦 Product Temp (Draft) APIs
-  // ============================
+  // Upload media file
+  uploadMedia: async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append("media", file)
+    const response = await apiClient.post(MEDIA_API_BASE, formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    })
+    const fileName = response.data.result?.name || response.data.name
+    if (!fileName) {
+      throw new Error("Failed to upload media")
+    }
+    return fileName
+  },
 
-  getProductTemps: async (shopId?: string, status?: string): Promise<ProductTemp[]> => {
+  // Get all products with filters
+  getProducts: async (filters: ProductFilters = {}): Promise<ProductListResponse> => {
     const params = new URLSearchParams()
-    if (shopId) params.append("ShopId", shopId)
-    if (status) params.append("Status", status)
+    
+    if (filters.page) params.append('page', filters.page.toString())
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.brand) params.append('brand', filters.brand)
+    if (filters.shop_id) params.append('shop_id', filters.shop_id)
+    if (filters.price_min) params.append('price_min', filters.price_min.toString())
+    if (filters.price_max) params.append('price_max', filters.price_max.toString())
+    if (filters.keywords) params.append('keywords', filters.keywords)
+    if (filters.sort) params.append('sort', filters.sort)
+    if (filters.cate_path) params.append('cate_path', filters.cate_path)
 
-    const url = params.toString() ? `${PRODUCT_TEMP_API}?${params}` : PRODUCT_TEMP_API
-    const response = await apiClient.get<{ result?: ProductTemp[]; data?: ProductTemp[] }>(url)
-    return response.data.result || response.data as ProductTemp[]
+    const response = await apiClient.get(
+      `${PRODUCT_API_BASE}/getall${params.toString() ? '?' + params.toString() : ''}`
+    )
+    return response.data.result
   },
 
-  getProductTempById: async (id: string): Promise<ProductTemp> => {
-    const response = await apiClient.get<{ result?: ProductTemp; data?: ProductTemp }>(`${PRODUCT_TEMP_API}/${id}`)
-    return response.data.result || response.data as ProductTemp
+  // Get product detail by ID
+  getProductDetail: async (productId: string): Promise<ProductDetail> => {
+    const response = await apiClient.get(
+      `${PRODUCT_API_BASE}/getdetail_with_id/${productId}`
+    )
+    return response.data.result.data
   },
 
-  createProductTemp: async (data: ProductFormData): Promise<ProductTemp> => {
-    const payload = {
-      ProductTempName: data.productTempName,
-      ProductTempDescription: data.productTempDescription,
-      ProductTempDetails: data.productTempDetails,
-      ProductTempImage: data.productTempImage || [],
-      ProductTempMedia: data.productTempMedia || [],
-      ProductTempBrandId: data.productTempBrandId,
-      ProductTempCategoryId: data.productTempCategoryId,
-      ProductTempSkuId: data.productTempSkuId,
-      ProductTempIsPermissionReturn: data.productTempIsPermissionReturn || false,
+  // Create product
+  createProduct: async (data: CreateProductPayload, files: {
+    image?: File
+    media?: File[]
+    option_value_images?: File[]
+  }): Promise<Product> => {
+    const formData = new FormData()
+    
+    // Add product data as JSON string
+    formData.append('Product', JSON.stringify(data))
+    
+    // Add image file
+    if (files.image) {
+      formData.append('Image', files.image)
     }
-    const response = await apiClient.post<{ result?: ProductTemp; data?: ProductTemp }>(PRODUCT_TEMP_API, payload)
-    return response.data.result || response.data as ProductTemp
-  },
-
-  updateProductTemp: async (id: string, data: Partial<ProductFormData>): Promise<ProductTemp> => {
-    const payload: Record<string, any> = {}
-    if (data.productTempName) payload.ProductTempName = data.productTempName
-    if (data.productTempDescription) payload.ProductTempDescription = data.productTempDescription
-    if (data.productTempDetails) payload.ProductTempDetails = data.productTempDetails
-    if (data.productTempImage) payload.ProductTempImage = data.productTempImage
-    if (data.productTempMedia) payload.ProductTempMedia = data.productTempMedia
-    if (data.productTempBrandId) payload.ProductTempBrandId = data.productTempBrandId
-    if (data.productTempCategoryId) payload.ProductTempCategoryId = data.productTempCategoryId
-    if (data.productTempSkuId) payload.ProductTempSkuId = data.productTempSkuId
-    if (data.productTempIsPermissionReturn !== undefined)
-      payload.ProductTempIsPermissionReturn = data.productTempIsPermissionReturn
-
-    const response = await apiClient.put<{ result?: ProductTemp; data?: ProductTemp }>(`${PRODUCT_TEMP_API}/${id}`, payload)
-    return response.data.result || response.data as ProductTemp
-  },
-
-  deleteProductTemp: async (id: string): Promise<void> => {
-    await apiClient.delete(`${PRODUCT_TEMP_API}/${id}`)
-  },
-
-  approveProductTemp: async (id: string, isApproved: boolean, feedback?: string): Promise<ProductTemp> => {
-    const payload = {
-      IsApproved: isApproved,
-      Feedback: feedback || "",
+    
+    // Add media files
+    if (files.media && files.media.length > 0) {
+      files.media.forEach(file => {
+        formData.append('Media', file)
+      })
     }
-    const response = await apiClient.post<{ result?: ProductTemp; data?: ProductTemp }>(`${PRODUCT_TEMP_API}/${id}/approve`, payload)
-    return response.data.result || response.data as ProductTemp
+    
+    // Add option value images
+    if (files.option_value_images && files.option_value_images.length > 0) {
+      files.option_value_images.forEach((file, index) => {
+        formData.append(`option_value_images[${index}]`, file)
+      })
+    }
+    
+    const response = await apiClient.post(
+      `${PRODUCT_API_BASE}/create`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    )
+    return response.data.result
   },
 
-  // ============================
-  // ✅ Product APIs (Approved)
-  // ============================
-
-  getProducts: async (): Promise<Product[]> => {
-    const response = await apiClient.get<{ result?: Product[]; data?: Product[] }>(PRODUCT_API)
-    return response.data.result || response.data as Product[]
+  // Update product
+  updateProduct: async (
+    productId: string, 
+    data: UpdateProductPayload,
+    files?: {
+      image?: File
+      media?: File[]
+      option_value_images?: File[]
+    }
+  ): Promise<Product> => {
+    const formData = new FormData()
+    
+    // Add product data as JSON string
+    formData.append('Product', JSON.stringify(data))
+    
+    // Add files if provided
+    if (files?.image) {
+      formData.append('Image', files.image)
+    }
+    
+    if (files?.media && files.media.length > 0) {
+      files.media.forEach(file => {
+        formData.append('Media', file)
+      })
+    }
+    
+    if (files?.option_value_images && files.option_value_images.length > 0) {
+      files.option_value_images.forEach((file, index) => {
+        formData.append(`option_value_images[${index}]`, file)
+      })
+    }
+    
+    const response = await apiClient.put(
+      `${PRODUCT_API_BASE}/update/${productId}`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    )
+    return response.data.result
   },
 
-  getProductById: async (id: string): Promise<Product> => {
-    const response = await apiClient.get<{ result?: Product; data?: Product }>(`${PRODUCT_API}/${id}`)
-    return response.data.result || response.data as Product
+  // Delete product
+  deleteProduct: async (productId: string): Promise<void> => {
+    await apiClient.delete(`${PRODUCT_API_BASE}/${productId}`)
   },
 
-  updateProduct: async (id: string, data: Partial<Product>): Promise<Product> => {
-    const response = await apiClient.put<{ result?: Product; data?: Product }>(`${PRODUCT_API}/${id}`, data)
-    return response.data.result || response.data as Product
-  },
-
-  deleteProduct: async (id: string): Promise<void> => {
-    await apiClient.delete(`${PRODUCT_API}/${id}`)
-  },
-
-  // ============================
-  // 🏷️ Category & Brand APIs
-  // ============================
-
-  getCategories: async (): Promise<Category[]> => {
-    const response = await apiClient.get<{ result?: Category[]; data?: Category[] }>(CATEGORY_API)
-    return response.data.result || response.data as Category[]
-  },
-
+  // Get brands (mock - adjust endpoint if needed)
   getBrands: async (): Promise<Brand[]> => {
-    const response = await apiClient.get<{ result?: Brand[]; data?: Brand[] }>(BRAND_API)
-    return response.data.result || response.data as Brand[]
+    // Replace with actual endpoint when available
+    const response = await apiClient.get('/brands')
+    return response.data.result || response.data
   },
+
+  // Get categories (mock - adjust endpoint if needed)
+  getCategories: async (): Promise<Category[]> => {
+    // Replace with actual endpoint when available
+    const response = await apiClient.get('/categories')
+    return response.data.result || response.data
+  }
 }
