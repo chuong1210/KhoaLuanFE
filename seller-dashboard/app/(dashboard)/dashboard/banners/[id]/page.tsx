@@ -1,9 +1,9 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { bannerService } from "@/services/banner-service";
 import {
   Card,
@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -33,13 +35,16 @@ import {
   Link as LinkIcon,
   Hash,
   ArrowLeft,
+  AlertCircle,
 } from "lucide-react";
 import type { BannerFormData } from "@/types/banner";
-import { useAppSelector } from "@/store/hooks";
 
-export default function CreateBannerPage() {
+const MEDIA_BASE_URL = "http://localhost:9001/v1/media";
+
+export default function EditBannerPage() {
   const router = useRouter();
-  const shopId = useAppSelector((state) => state.auth.shopId);
+  const params = useParams();
+  const bannerId = params.id as string;
   const [imagePreview, setImagePreview] = useState<string>("");
   const [formData, setFormData] = useState<BannerFormData>({
     bannerName: "",
@@ -53,17 +58,50 @@ export default function CreateBannerPage() {
     targetId: "",
   });
 
-  const createBannerMutation = useMutation({
-    mutationFn: (data: BannerFormData & { shopId: string }) =>
-      bannerService.createBanner(data),
+  // Fetch banner data
+  const {
+    data: banner,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["banner", bannerId],
+    queryFn: () => bannerService.getBannerById(bannerId),
+    enabled: !!bannerId,
+  });
+
+  // Initialize form with banner data
+  useEffect(() => {
+    if (banner) {
+      setFormData({
+        bannerName: banner.bannerName,
+        bannerImage: banner.bannerImage,
+        bannerUrl: banner.bannerUrl,
+        bannerOrder: banner.bannerOrder,
+        isActive: banner.isActive,
+        startDate: banner.startDate.slice(0, 16),
+        endDate: banner.endDate.slice(0, 16),
+        bannerType: banner.bannerType,
+        targetId: banner.targetId || "",
+      });
+
+      // Set image preview if banner has image
+      if (banner.bannerImage) {
+        setImagePreview(`${MEDIA_BASE_URL}/${banner.bannerImage}`);
+      }
+    }
+  }, [banner]);
+
+  const updateBannerMutation = useMutation({
+    mutationFn: (data: Partial<BannerFormData>) =>
+      bannerService.updateBanner(bannerId, data),
     onSuccess: () => {
-      toast.success("Đã tạo banner thành công", {
-        description: "Banner mới đã được thêm vào danh sách",
+      toast.success("Cập nhật banner thành công", {
+        description: "Thông tin banner đã được lưu",
       });
       router.push("/dashboard/banners");
     },
     onError: (error: any) => {
-      toast.error("Tạo banner thất bại", {
+      toast.error("Cập nhật banner thất bại", {
         description: error.message || "Vui lòng thử lại sau",
       });
     },
@@ -72,19 +110,12 @@ export default function CreateBannerPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!shopId) {
-      toast.error("Không tìm thấy thông tin shop", {
-        description: "Vui lòng đăng nhập lại",
-      });
-      return;
-    }
-
     if (!formData.bannerImage) {
       toast.error("Vui lòng chọn hình ảnh banner");
       return;
     }
 
-    createBannerMutation.mutate({ ...formData, shopId });
+    updateBannerMutation.mutate(formData);
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,6 +153,40 @@ export default function CreateBannerPage() {
     setImagePreview("");
   };
 
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
+        <Skeleton className="h-12 w-64" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Lỗi</AlertTitle>
+          <AlertDescription>
+            Không thể tải thông tin banner. Vui lòng thử lại sau.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => router.back()}>Quay lại</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
@@ -139,10 +204,10 @@ export default function CreateBannerPage() {
             className="text-3xl font-bold tracking-tight"
             style={{ color: "#E65100" }}
           >
-            Tạo Banner Mới
+            Chỉnh Sửa Banner
           </h2>
           <p className="text-muted-foreground mt-1">
-            Tạo banner quảng cáo thu hút khách hàng đến cửa hàng của bạn
+            Cập nhật thông tin banner quảng cáo của bạn
           </p>
         </div>
       </div>
@@ -158,7 +223,7 @@ export default function CreateBannerPage() {
             Thông tin Banner
           </CardTitle>
           <CardDescription className="text-white/90">
-            Điền đầy đủ thông tin để tạo banner quảng cáo hiệu quả
+            Chỉnh sửa các thông tin cần thiết cho banner
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
@@ -201,9 +266,6 @@ export default function CreateBannerPage() {
                     <p className="text-sm text-muted-foreground">
                       PNG, JPG, GIF (tối đa 5MB)
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Kích thước đề xuất: 1920x600px
-                    </p>
                   </label>
                 </div>
               ) : (
@@ -229,7 +291,7 @@ export default function CreateBannerPage() {
                     <p className="text-white text-sm font-medium">
                       {formData.bannerImage instanceof File
                         ? formData.bannerImage.name
-                        : "Ảnh banner"}
+                        : banner?.bannerImage}
                     </p>
                   </div>
                 </div>
@@ -277,9 +339,6 @@ export default function CreateBannerPage() {
                 required
                 className="h-11 border-2 focus:border-[#FF6A00]"
               />
-              <p className="text-sm text-muted-foreground">
-                Liên kết mà người dùng sẽ được chuyển đến khi nhấp vào banner
-              </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
@@ -325,7 +384,6 @@ export default function CreateBannerPage() {
                   type="number"
                   value={formData.bannerOrder}
                   onChange={handleTextChange}
-                  placeholder="1"
                   min="0"
                   max="999"
                   required
@@ -377,7 +435,7 @@ export default function CreateBannerPage() {
               </div>
             </div>
 
-            {/* Target ID (Optional) */}
+            {/* Target ID */}
             <div className="space-y-2">
               <Label
                 htmlFor="targetId"
@@ -394,9 +452,6 @@ export default function CreateBannerPage() {
                 placeholder="VD: product-123, category-456"
                 className="h-11 border-2 focus:border-[#FF6A00]"
               />
-              <p className="text-sm text-muted-foreground">
-                ID của sản phẩm hoặc danh mục liên kết (nếu có)
-              </p>
             </div>
 
             {/* Active Status */}
@@ -410,10 +465,10 @@ export default function CreateBannerPage() {
                   className="text-base font-semibold"
                   style={{ color: "#E65100" }}
                 >
-                  Kích hoạt ngay
+                  Trạng thái hoạt động
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Banner sẽ hiển thị ngay sau khi tạo (trong thời gian đã đặt)
+                  Banner sẽ hiển thị khi được kích hoạt
                 </p>
               </div>
               <Switch
@@ -429,23 +484,23 @@ export default function CreateBannerPage() {
             <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                disabled={createBannerMutation.isPending}
+                disabled={updateBannerMutation.isPending}
                 className="flex-1 h-12 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
                 style={{
-                  background: createBannerMutation.isPending
+                  background: updateBannerMutation.isPending
                     ? "#FFB38A"
                     : "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
                 }}
               >
-                {createBannerMutation.isPending ? (
+                {updateBannerMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Đang tạo banner...
+                    Đang cập nhật...
                   </>
                 ) : (
                   <>
                     <ImageIcon className="mr-2 h-5 w-5" />
-                    Tạo banner
+                    Cập nhật banner
                   </>
                 )}
               </Button>

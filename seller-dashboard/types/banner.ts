@@ -1,22 +1,27 @@
+// types/banner.ts
 export interface Banner {
   id: string
-  shopId?: string
-  title: string
-  image: string
-  link: string
-  order: number
+  shopId: string
+  bannerName: string
+  bannerImage: string
+  bannerUrl: string
+  bannerOrder: number
+  isActive: boolean
   startDate: string
   endDate: string
-  status: "active" | "inactive"
-  createdAt: string
-  updatedAt: string
+  bannerType: "HOME" | "CATEGORY" | "PRODUCT" | "PROMOTION"
+  targetId?: string
+  createdDate: string
 }
 
 export interface BannerFormData {
-  title: string
-  image: string
-  link: string
-  order: number
+  bannerName: string
+  bannerImage: File | string
+  bannerUrl: string
+  bannerOrder: number
+  isActive?: boolean
   startDate: string
   endDate: string
+  bannerType?: "HOME" | "CATEGORY" | "PRODUCT" | "PROMOTION"
+  targetId?: string
 }

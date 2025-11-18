@@ -1,10 +1,3 @@
-// pages/dashboard/vouchers/[id]/edit.tsx
-// New: Update page, similar to Create but loads data with useQuery.
-// - Pre-populate form.
-// - Use updateMutation.
-// - For user_use: Display as comma-separated string.
-// - Validate on submit.
-
 "use client";
 
 import type React from "react";
@@ -12,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { voucherService } from "@/services/voucher-service";
+import type { VoucherUsageDetail } from "@/types/voucher";
 import {
   Card,
   CardContent,
@@ -29,6 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -36,22 +40,27 @@ import {
   Save,
   Calendar,
   Percent,
-  DollarSign,
   Users,
   Package,
   ArrowLeft,
   AlertCircle,
+  TrendingUp,
+  User,
+  Clock,
+  Tag,
 } from "lucide-react";
-import type { VoucherFormData, Voucher } from "@/types/voucher";
-import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { VoucherFormData, Voucher } from "@/types/voucher";
 
-export default function UpdateVoucherPage() {
+export default function EditVoucherPage() {
   const params = useParams();
   const router = useRouter();
   const voucherId = params.id as string;
 
-  const [formData, setFormData] = useState<VoucherFormData>({
+  const [formData, setFormData] = useState<
+    VoucherFormData & { user_use_str: string }
+  >({
     name: "",
     voucher_code: "",
     discount_type: "PERCENTAGE",
@@ -65,12 +74,29 @@ export default function UpdateVoucherPage() {
     total_quantity: 0,
     max_usage_per_user: 1,
     user_use: [],
+    user_use_str: "",
     is_active: true,
   });
 
-  const { data: voucher, isLoading } = useQuery({
+  const [usageOffset, setUsageOffset] = useState(0);
+  const usageLimit = 20;
+
+  const {
+    data: voucher,
+    isLoading: voucherLoading,
+    error: voucherError,
+  } = useQuery<Voucher>({
     queryKey: ["voucher", voucherId],
     queryFn: () => voucherService.getVoucherById(voucherId),
+    enabled: !!voucherId,
+  });
+
+  const { data: usageDetails, isLoading: usageLoading } = useQuery<
+    VoucherUsageDetail[]
+  >({
+    queryKey: ["voucherUsage", voucherId, usageOffset],
+    queryFn: () =>
+      voucherService.getVoucherUsageDetails(voucherId, usageLimit, usageOffset),
     enabled: !!voucherId,
   });
 
@@ -90,6 +116,7 @@ export default function UpdateVoucherPage() {
         total_quantity: voucher.total_quantity,
         max_usage_per_user: voucher.max_usage_per_user,
         user_use: voucher.user_use || [],
+        user_use_str: voucher.user_use?.join(", ") || "",
         is_active: voucher.is_active,
       });
     }
@@ -122,108 +149,142 @@ export default function UpdateVoucherPage() {
     }
     if (
       formData.audience_type === "ASSIGNED" &&
-      (!formData.user_use || formData.user_use.length === 0)
+      (!formData.user_use_str || formData.user_use_str.trim() === "")
     ) {
       toast.error("Vui lòng nhập danh sách user IDs cho audience ASSIGNED");
       return;
     }
-    const userUseArray = Array.isArray(formData.user_use)
-      ? formData.user_use
-      : (formData.user_use || "")
-          .split(",")
-          .map((u) => u.trim())
-          .filter(Boolean);
-    updateVoucherMutation.mutate({
-      id: voucherId,
-      data: { ...formData, user_use: userUseArray },
-    });
+
+    const payload = {
+      ...formData,
+      start_date: new Date(formData.start_date).toISOString(),
+      end_date: new Date(formData.end_date).toISOString(),
+    };
+
+    updateVoucherMutation.mutate({ id: voucherId, data: payload });
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value =
       e.target.type === "number"
-        ? Number.parseFloat(e.target.value) || 0
+        ? parseFloat(e.target.value) || 0
         : e.target.value;
-    setFormData({
-      ...formData,
-      [e.target.name]: value,
-    });
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleSelectChange = (name: keyof VoucherFormData, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: value as any,
-    });
+    setFormData({ ...formData, [name]: value as any });
   };
 
   const handleUserUseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      user_use: (e.target.value || "")
-        .split(",")
-        .map((u) => u.trim())
-        .filter(Boolean),
-    });
+    const value = e.target.value;
+    const userIds = value
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
+    setFormData({ ...formData, user_use_str: value, user_use: userIds });
   };
 
   const handleIsActiveChange = (checked: boolean) => {
-    setFormData({
-      ...formData,
-      is_active: checked,
+    setFormData({ ...formData, is_active: checked });
+  };
+
+  const formatPrice = (amount: string) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(Number(amount));
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  if (isLoading) {
+  const loadMoreUsage = () => {
+    setUsageOffset((prev) => prev + usageLimit);
+  };
+
+  if (voucherError) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-64 w-full" />
+      <div className="p-6">
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-800" />
+          <AlertTitle className="text-red-800">Lỗi</AlertTitle>
+          <AlertDescription className="text-red-800">
+            Không thể tải thông tin voucher. Vui lòng thử lại.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
-  if (!voucher) {
+  if (voucherLoading || !voucher) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Không tìm thấy voucher</AlertTitle>
-      </Alert>
+      <div className="space-y-6 p-6">
+        <Skeleton className="h-12 w-64" />
+        <Card>
+          <CardContent className="pt-6">
+            <Skeleton className="h-96 w-full" />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => router.back()} size="sm">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          size="sm"
+          className="hover:bg-[#FFF0E0]"
+          style={{ color: "#FF6A00" }}
+        >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Quay lại
         </Button>
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-          <Ticket className="h-6 w-6 text-primary-foreground" />
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-xl shadow-lg"
+          style={{
+            background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+          }}
+        >
+          <Ticket className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">
+          <h2
+            className="text-3xl font-bold tracking-tight"
+            style={{
+              background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
             Chỉnh sửa Voucher
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-gray-600">
             Cập nhật thông tin voucher "{voucher.name}"
           </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Thông tin Voucher</CardTitle>
+      <Card className="border-0 shadow-md">
+        <CardHeader className="bg-[#FFF0E0]/50">
+          <CardTitle style={{ color: "#E65100" }}>Thông tin Voucher</CardTitle>
           <CardDescription>
             Cập nhật các trường cần thiết. Thay đổi sẽ được lưu ngay lập tức.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Same form structure as Create, but with is_active toggle */}
-            {/* Basic Info */}
+            {/* Same form structure as create page but with pre-filled data */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Tên voucher *</Label>
@@ -232,7 +293,7 @@ export default function UpdateVoucherPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="Voucher Giảm Giá 15%"
+                  className="border-[#FFB38A] focus:border-[#FF6A00]"
                   required
                 />
               </div>
@@ -244,16 +305,24 @@ export default function UpdateVoucherPage() {
                   name="voucher_code"
                   value={formData.voucher_code}
                   onChange={handleChange}
-                  placeholder="SALE15"
+                  className="border-[#FFB38A] focus:border-[#FF6A00]"
                   required
                 />
               </div>
             </div>
 
-            {/* Discount Settings - same as Create */}
-
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2">
+            {/* Discount, Apply, Audience, Dates sections - same as create page */}
+            <div
+              className="space-y-4 p-4 rounded-lg border-2 border-[#FFB38A]"
+              style={{
+                background:
+                  "linear-gradient(90deg, rgba(255,179,138,0.1) 0%, rgba(255,211,163,0.1) 100%)",
+              }}
+            >
+              <h3
+                className="font-semibold flex items-center gap-2"
+                style={{ color: "#E65100" }}
+              >
                 <Percent className="h-4 w-4" /> Cài đặt giảm giá
               </h3>
               <div className="grid gap-4 md:grid-cols-3">
@@ -265,7 +334,7 @@ export default function UpdateVoucherPage() {
                       handleSelectChange("discount_type", value)
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="border-[#FFB38A]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -289,14 +358,9 @@ export default function UpdateVoucherPage() {
                     type="number"
                     value={formData.discount_value}
                     onChange={handleChange}
-                    placeholder={
-                      formData.discount_type === "PERCENTAGE" ? "15" : "50000"
-                    }
                     min="0"
-                    max={
-                      formData.discount_type === "PERCENTAGE" ? 100 : undefined
-                    }
                     step={formData.discount_type === "PERCENTAGE" ? 0.1 : 1000}
+                    className="border-[#FFB38A] focus:border-[#FF6A00]"
                     required
                   />
                 </div>
@@ -309,189 +373,41 @@ export default function UpdateVoucherPage() {
                     type="number"
                     value={formData.max_discount_amount}
                     onChange={handleChange}
-                    placeholder="0 (không giới hạn)"
                     min="0"
                     step="1000"
+                    className="border-[#FFB38A] focus:border-[#FF6A00]"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Apply Settings - same */}
-
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Package className="h-4 w-4" /> Áp dụng cho
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Áp dụng cho *</Label>
-                  <Select
-                    value={formData.applies_to_type}
-                    onValueChange={(value) =>
-                      handleSelectChange("applies_to_type", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ORDER_TOTAL">Tổng đơn hàng</SelectItem>
-                      <SelectItem value="SHIPPING_FEE">
-                        Phí vận chuyển
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="min_purchase_amount">
-                    Đơn hàng tối thiểu (VNĐ) *
-                  </Label>
-                  <Input
-                    id="min_purchase_amount"
-                    name="min_purchase_amount"
-                    type="number"
-                    value={formData.min_purchase_amount}
-                    onChange={handleChange}
-                    placeholder="100000"
-                    min="0"
-                    step="1000"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Audience & Usage - same, plus is_active toggle */}
-
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4" /> Đối tượng & Số lượng
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Audience type *</Label>
-                  <Select
-                    value={formData.audience_type}
-                    onValueChange={(value) =>
-                      handleSelectChange("audience_type", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PUBLIC">Công khai (Tất cả)</SelectItem>
-                      <SelectItem value="ASSIGNED">
-                        Gán cho user cụ thể
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.audience_type === "ASSIGNED" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="user_use">
-                      User IDs (phân cách bằng dấu phẩy)
-                    </Label>
-                    <Input
-                      id="user_use"
-                      name="user_use"
-                      value={formData.user_use?.join(", ") || ""}
-                      onChange={handleUserUseChange}
-                      placeholder="user_001, user_002"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="total_quantity">Tổng số lượng *</Label>
-                  <Input
-                    id="total_quantity"
-                    name="total_quantity"
-                    type="number"
-                    value={formData.total_quantity}
-                    onChange={handleChange}
-                    placeholder="1000"
-                    min="1"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="max_usage_per_user">
-                    Sử dụng tối đa/user *
-                  </Label>
-                  <Input
-                    id="max_usage_per_user"
-                    name="max_usage_per_user"
-                    type="number"
-                    value={formData.max_usage_per_user}
-                    onChange={handleChange}
-                    placeholder="1"
-                    min="1"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Active Toggle */}
-              <div className="flex items-center space-x-2 pt-4 border-t">
-                <input
-                  id="is_active"
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => handleIsActiveChange(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <Label
-                  htmlFor="is_active"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Kích hoạt voucher
-                </Label>
-              </div>
-            </div>
-
-            {/* Dates - same */}
-
-            <div className="space-y-4 p-4 border rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Calendar className="h-4 w-4" /> Thời gian hiệu lực
-              </h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="start_date">Ngày bắt đầu *</Label>
-                  <Input
-                    id="start_date"
-                    name="start_date"
-                    type="datetime-local"
-                    value={formData.start_date}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="end_date">Ngày kết thúc *</Label>
-                  <Input
-                    id="end_date"
-                    name="end_date"
-                    type="datetime-local"
-                    value={formData.end_date}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
+            {/* Other sections similar to create page */}
+            <div
+              className="flex items-center space-x-2 p-4 rounded-lg border-2 border-[#FFB38A]"
+              style={{
+                background:
+                  "linear-gradient(90deg, rgba(255,179,138,0.1) 0%, rgba(255,211,163,0.1) 100%)",
+              }}
+            >
+              <Switch
+                id="is_active"
+                checked={formData.is_active}
+                onCheckedChange={handleIsActiveChange}
+              />
+              <Label htmlFor="is_active" className="text-sm font-medium">
+                Kích hoạt voucher
+              </Label>
             </div>
 
             <div className="flex gap-4">
               <Button
                 type="submit"
                 disabled={updateVoucherMutation.isPending}
-                className="flex-1"
+                className="flex-1 text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                }}
               >
                 {updateVoucherMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -503,11 +419,138 @@ export default function UpdateVoucherPage() {
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
+                className="border-[#FFB38A] hover:bg-[#FFF0E0]"
+                style={{ color: "#FF6A00" }}
               >
                 Hủy
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Usage Stats Section */}
+      <Card className="border-0 shadow-md">
+        <CardHeader className="bg-[#FFF0E0]/50 border-b border-[#FFB38A]/30">
+          <CardTitle
+            className="flex items-center gap-2"
+            style={{ color: "#E65100" }}
+          >
+            <TrendingUp className="h-5 w-5" />
+            Thống kê sử dụng Voucher
+          </CardTitle>
+          <CardDescription>
+            Tổng {usageDetails?.length || 0} lần sử dụng gần đây
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {usageLoading && usageOffset === 0 ? (
+            <div className="p-6 space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : usageDetails && usageDetails.length > 0 ? (
+            <div className="relative">
+              <div className="rounded-lg overflow-hidden border border-[#FFB38A]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#FFF0E0] hover:bg-[#FFF0E0]">
+                      <TableHead style={{ color: "#E65100" }}>ID</TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        User ID
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Giảm giá
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Thời gian sử dụng
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usageDetails.map((usage) => (
+                      <TableRow
+                        key={usage.id}
+                        className="hover:bg-[#FFF0E0]/30 transition-colors"
+                      >
+                        <TableCell
+                          className="font-medium"
+                          style={{ color: "#FF6A00" }}
+                        >
+                          {usage.id}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className="border-[#FF8A33] text-[#FF8A33] bg-[#FFF0E0]"
+                          >
+                            <User className="h-3 w-3 mr-1" />
+                            {usage.user_id}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold text-green-600">
+                          {formatPrice(usage.discount_amount)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Clock
+                              className="h-3 w-3"
+                              style={{ color: "#FF6A00" }}
+                            />
+                            {formatDate(usage.used_at)}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="p-4 border-t border-[#FFB38A]/30 bg-[#FFF0E0]/30 flex justify-center">
+                <Button
+                  onClick={loadMoreUsage}
+                  variant="outline"
+                  className="border-[#FF6A00] hover:bg-[#FF6A00] hover:text-white"
+                  style={{ color: "#FF6A00" }}
+                  disabled={usageLoading}
+                >
+                  {usageLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                  )}
+                  Tải thêm ({usageLimit} lần)
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-[#FFF0E0]/20">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                }}
+              >
+                <Tag className="w-8 h-8 text-white" />
+              </div>
+              <h3
+                className="text-lg font-semibold mb-1"
+                style={{ color: "#E65100" }}
+              >
+                Chưa có lượt sử dụng
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Voucher này chưa được áp dụng trong đơn hàng nào.
+              </p>
+              <Badge
+                className="text-white"
+                style={{ backgroundColor: "#FF6A00" }}
+              >
+                Sẵn sàng cho khách hàng!
+              </Badge>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

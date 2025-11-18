@@ -43,6 +43,7 @@ import {
   Eye,
   Filter,
   Search,
+  RefreshCw,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -62,15 +63,14 @@ export default function OrdersListPage() {
   const [filters, setFilters] = useState<OrderSearchParams>({
     shop_id: shopId || undefined,
     page: 1,
-    page_size: 20,
-    sort_by: "created_at",
+    limit: 12,
   });
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["orders", filters],
-    queryFn: () => orderService.searchOrders(filters),
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["shopOrders", filters],
+    queryFn: () => orderService.getShopOrders(filters),
     enabled: !!shopId,
   });
 
@@ -87,7 +87,8 @@ export default function OrdersListPage() {
     }).format(price);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null) => {
+    if (!date) return "-";
     return new Date(date).toLocaleString("vi-VN", {
       year: "numeric",
       month: "2-digit",
@@ -121,18 +122,24 @@ export default function OrdersListPage() {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
 
+  const getStatusCount = (status: OrderStatus) => {
+    return (
+      data?.result.data.filter((order) => order.status === status).length || 0
+    );
+  };
+
   if (!shopId) {
     return (
-      <Alert>
-        <AlertDescription>
-          Vui lòng đăng nhập và chọn shop để xem danh sách đơn hàng.
+      <Alert className="border-[#FFB38A] bg-[#FFF0E0]">
+        <AlertDescription style={{ color: "#E65100" }}>
+          Vui lòng đăng nhập và có shop để xem danh sách đơn hàng.
         </AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -147,29 +154,41 @@ export default function OrdersListPage() {
             Quản lý Đơn hàng
           </h2>
           <p className="text-gray-600 mt-1">
-            Xem và xử lý các đơn hàng của cửa hàng
+            Tổng cộng:{" "}
+            <span className="font-semibold" style={{ color: "#FF6A00" }}>
+              {data?.result.totalElements || 0}
+            </span>{" "}
+            đơn hàng
           </p>
         </div>
-        <Button
-          onClick={() => setShowFilters(!showFilters)}
-          className="text-white"
-          style={{
-            background: "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
-          }}
-        >
-          <Filter className="mr-2 h-4 w-4" />
-          {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            className="border-[#FFB38A] hover:bg-[#FFF0E0]"
+            style={{ color: "#FF6A00" }}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Làm mới
+          </Button>
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            className="text-white"
+            style={{
+              background: "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
+            }}
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         {Object.entries(STATUS_CONFIG).map(([status, config]) => {
           const Icon = config.icon;
-          const count =
-            data?.result.data.filter(
-              (item) => item.order_shop.status === status
-            ).length || 0;
+          const count = getStatusCount(status as OrderStatus);
 
           return (
             <Card
@@ -177,10 +196,10 @@ export default function OrdersListPage() {
               className="border-0 shadow-md hover:shadow-lg transition-shadow"
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-xs font-medium text-gray-600">
                   {config.label}
                 </CardTitle>
-                <Icon className="h-5 w-5" style={{ color: config.color }} />
+                <Icon className="h-4 w-4" style={{ color: config.color }} />
               </CardHeader>
               <CardContent>
                 <div
@@ -204,7 +223,7 @@ export default function OrdersListPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Trạng thái</Label>
                 <Select
@@ -213,8 +232,8 @@ export default function OrdersListPage() {
                     handleFilterChange("status", value || undefined)
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tất cả" />
+                  <SelectTrigger className="border-[#FFB38A] focus:ring-[#FF6A00]">
+                    <SelectValue placeholder="Tất cả trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Tất cả</SelectItem>
@@ -227,76 +246,18 @@ export default function OrdersListPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Giá trị tối thiểu</Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={filters.min_amount || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "min_amount",
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Giá trị tối đa</Label>
-                <Input
-                  type="number"
-                  placeholder="Không giới hạn"
-                  value={filters.max_amount || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "max_amount",
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Từ ngày</Label>
-                <Input
-                  type="date"
-                  value={filters.created_from || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "created_from",
-                      e.target.value || undefined
-                    )
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Đến ngày</Label>
-                <Input
-                  type="date"
-                  value={filters.created_to || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "created_to",
-                      e.target.value || undefined
-                    )
-                  }
-                />
-              </div>
-
               <div className="flex items-end">
                 <Button
                   onClick={() =>
                     setFilters({
                       shop_id: shopId || undefined,
                       page: 1,
-                      page_size: 20,
-                      sort_by: "created_at",
+                      limit: 12,
                     })
                   }
                   variant="outline"
-                  className="w-full"
+                  className="w-full border-[#E65100] hover:bg-[#FFF0E0]"
+                  style={{ color: "#E65100" }}
                 >
                   Xóa bộ lọc
                 </Button>
@@ -311,7 +272,8 @@ export default function OrdersListPage() {
         <CardHeader>
           <CardTitle style={{ color: "#E65100" }}>Danh sách đơn hàng</CardTitle>
           <CardDescription>
-            {data?.result.totalElements || 0} đơn hàng
+            Trang {data?.result.currentPage || 1} /{" "}
+            {data?.result.totalPages || 1}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -322,90 +284,140 @@ export default function OrdersListPage() {
               ))}
             </div>
           ) : error ? (
-            <Alert>
-              <AlertDescription>
+            <Alert className="border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800">
                 Không thể tải danh sách đơn hàng
               </AlertDescription>
             </Alert>
           ) : data?.result.data && data.result.data.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mã đơn hàng</TableHead>
-                    <TableHead>Khách hàng</TableHead>
-                    <TableHead>Sản phẩm</TableHead>
-                    <TableHead>Tổng tiền</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.result.data.map((orderDetail) => (
-                    <TableRow key={orderDetail.order_shop.shop_order_id}>
-                      <TableCell className="font-medium">
-                        #{orderDetail.order.order_code}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {orderDetail.order.shipping_address.fullName}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {orderDetail.order.shipping_address.phone}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {orderDetail.order_shop.items[0]?.product_name.substring(
-                          0,
-                          40
-                        )}
-                        ...
-                        {orderDetail.order_shop.items.length > 1 && (
-                          <span className="text-xs text-gray-500">
-                            {" "}
-                            +{orderDetail.order_shop.items.length - 1} sản phẩm
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        className="font-semibold"
-                        style={{ color: "#FF6A00" }}
+              <div className="rounded-lg border border-[#FFB38A] overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#FFF0E0] hover:bg-[#FFF0E0]">
+                      <TableHead style={{ color: "#E65100" }}>
+                        Mã đơn hàng
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Sản phẩm
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Phí ship
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Tổng tiền
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Trạng thái
+                      </TableHead>
+                      <TableHead style={{ color: "#E65100" }}>
+                        Ngày tạo
+                      </TableHead>
+                      <TableHead
+                        className="text-right"
+                        style={{ color: "#E65100" }}
                       >
-                        {formatPrice(orderDetail.order_shop.total_amount)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(orderDetail.order_shop.status)}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {formatDate(orderDetail.order_shop.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            router.push(
-                              `/dashboard/orders/${orderDetail.order_shop.shop_order_id}`
-                            )
-                          }
-                          className="hover:bg-[#FFF0E0]"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+                        Thao tác
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.result.data.map((order) => (
+                      <TableRow
+                        key={order.shop_order_id}
+                        className="hover:bg-[#FFF0E0]/30"
+                      >
+                        <TableCell className="font-medium">
+                          <div>
+                            <p
+                              className="font-semibold"
+                              style={{ color: "#E65100" }}
+                            >
+                              #{order.shop_order_code}
+                            </p>
+                            {order.tracking_code && (
+                              <p className="text-xs text-gray-500">
+                                Tracking: {order.tracking_code}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={
+                                order.items[0]?.product_image ||
+                                "/placeholder.svg"
+                              }
+                              alt={order.items[0]?.product_name}
+                              className="w-10 h-10 object-cover rounded border border-[#FFB38A]"
+                            />
+                            <div className="max-w-[200px]">
+                              <p className="text-sm font-medium truncate">
+                                {order.items[0]?.product_name}
+                              </p>
+                              {order.items.length > 1 && (
+                                <p className="text-xs text-gray-500">
+                                  +{order.items.length - 1} sản phẩm khác
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">
+                              {formatPrice(order.shipping_fee)}
+                            </p>
+                            {order.shipping_method && (
+                              <p className="text-xs text-gray-500">
+                                {order.shipping_method}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell
+                          className="font-bold"
+                          style={{ color: "#FF6A00" }}
+                        >
+                          {formatPrice(order.total_amount)}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(order.status)}</TableCell>
+                        <TableCell className="text-sm">
+                          {formatDate(order.created_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/orders/${order.shop_order_id}`
+                              )
+                            }
+                            className="border-[#FFB38A] hover:bg-[#FFF0E0]"
+                            style={{ color: "#FF6A00" }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
               {data.result.totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-gray-600">
-                    Trang {data.result.currentPage} / {data.result.totalPages}
+                    Hiển thị{" "}
+                    {(data.result.currentPage - 1) * data.result.limit + 1} -{" "}
+                    {Math.min(
+                      data.result.currentPage * data.result.limit,
+                      data.result.totalElements
+                    )}{" "}
+                    trong tổng số {data.result.totalElements} đơn hàng
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -415,9 +427,59 @@ export default function OrdersListPage() {
                       onClick={() =>
                         handlePageChange(data.result.currentPage - 1)
                       }
+                      className="border-[#FFB38A] hover:bg-[#FFF0E0]"
+                      style={{ color: "#FF6A00" }}
                     >
                       Trước
                     </Button>
+                    <div className="flex items-center gap-2">
+                      {Array.from(
+                        { length: Math.min(5, data.result.totalPages) },
+                        (_, i) => {
+                          let pageNum;
+                          if (data.result.totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (data.result.currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (
+                            data.result.currentPage >=
+                            data.result.totalPages - 2
+                          ) {
+                            pageNum = data.result.totalPages - 4 + i;
+                          } else {
+                            pageNum = data.result.currentPage - 2 + i;
+                          }
+
+                          return (
+                            <Button
+                              key={pageNum}
+                              size="sm"
+                              variant={
+                                data.result.currentPage === pageNum
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() => handlePageChange(pageNum)}
+                              className={
+                                data.result.currentPage === pageNum
+                                  ? "text-white"
+                                  : "border-[#FFB38A] hover:bg-[#FFF0E0]"
+                              }
+                              style={
+                                data.result.currentPage === pageNum
+                                  ? {
+                                      background:
+                                        "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
+                                    }
+                                  : { color: "#FF6A00" }
+                              }
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        }
+                      )}
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"
@@ -427,6 +489,8 @@ export default function OrdersListPage() {
                       onClick={() =>
                         handlePageChange(data.result.currentPage + 1)
                       }
+                      className="border-[#FFB38A] hover:bg-[#FFF0E0]"
+                      style={{ color: "#FF6A00" }}
                     >
                       Sau
                     </Button>
@@ -436,8 +500,13 @@ export default function OrdersListPage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="h-12 w-12 text-gray-300 mb-4" />
-              <p className="text-gray-500">Không có đơn hàng nào</p>
+              <Package className="h-16 w-16 text-gray-300 mb-4" />
+              <p className="text-gray-500 text-lg font-medium">
+                Không có đơn hàng nào
+              </p>
+              <p className="text-gray-400 text-sm mt-2">
+                Các đơn hàng sẽ xuất hiện tại đây khi có khách mua hàng
+              </p>
             </div>
           )}
         </CardContent>

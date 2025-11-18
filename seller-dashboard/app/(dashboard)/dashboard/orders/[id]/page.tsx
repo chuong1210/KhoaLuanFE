@@ -24,10 +24,11 @@ import {
   Clock,
   MapPin,
   Phone,
-  Mail,
   CreditCard,
   FileText,
   Loader2,
+  ShoppingBag,
+  Box,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -84,7 +85,7 @@ export default function OrderDetailPage({
       orderService.updateOrderStatus(params.id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", params.id] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["shopOrders"] });
       toast.success("Đã cập nhật trạng thái đơn hàng");
     },
     onError: () => {
@@ -99,7 +100,8 @@ export default function OrderDetailPage({
     }).format(price);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null) => {
+    if (!date) return "-";
     return new Date(date).toLocaleString("vi-VN", {
       year: "numeric",
       month: "long",
@@ -116,10 +118,10 @@ export default function OrderDetailPage({
 
     return (
       <Badge
-        className="text-white font-medium px-3 py-1"
+        className="text-white font-medium px-4 py-2 text-base"
         style={{ backgroundColor: config.color }}
       >
-        <Icon className="mr-1 h-4 w-4" />
+        <Icon className="mr-2 h-5 w-5" />
         {config.label}
       </Badge>
     );
@@ -127,7 +129,7 @@ export default function OrderDetailPage({
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <Skeleton className="h-12 w-64" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -136,19 +138,21 @@ export default function OrderDetailPage({
 
   if (error || !order) {
     return (
-      <Alert className="border-red-200 bg-red-50">
-        <AlertDescription className="text-red-800">
-          Không thể tải thông tin đơn hàng
-        </AlertDescription>
-      </Alert>
+      <div className="p-6">
+        <Alert className="border-red-200 bg-red-50">
+          <AlertDescription className="text-red-800">
+            Không thể tải thông tin đơn hàng
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
-  const currentStatus = order.order_shop.status;
+  const currentStatus = order.status;
   const statusConfig = STATUS_CONFIG[currentStatus];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -156,7 +160,8 @@ export default function OrderDetailPage({
             variant="outline"
             size="icon"
             onClick={() => router.back()}
-            className="hover:bg-[#FFF0E0]"
+            className="hover:bg-[#FFF0E0] border-[#FFB38A]"
+            style={{ color: "#FF6A00" }}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -173,7 +178,9 @@ export default function OrderDetailPage({
             </h2>
             <p className="text-gray-600 mt-1">
               Mã đơn:{" "}
-              <span className="font-semibold">#{order.order.order_code}</span>
+              <span className="font-semibold" style={{ color: "#FF6A00" }}>
+                #{order.shop_order_code}
+              </span>
             </p>
           </div>
         </div>
@@ -213,16 +220,15 @@ export default function OrderDetailPage({
                 </>
               ) : (
                 <>
-                  {STATUS_CONFIG[statusConfig.next as OrderStatus].icon && (
-                    <>
-                      {React.createElement(
-                        STATUS_CONFIG[statusConfig.next as OrderStatus].icon,
-                        { className: "mr-2 h-4 w-4" }
-                      )}
-                    </>
-                  )}
+                  {STATUS_CONFIG[statusConfig.next as OrderStatus]?.icon &&
+                    React.createElement(
+                      STATUS_CONFIG[statusConfig.next as OrderStatus].icon,
+                      {
+                        className: "mr-2 h-4 w-4",
+                      }
+                    )}
                   Chuyển sang:{" "}
-                  {STATUS_CONFIG[statusConfig.next as OrderStatus].label}
+                  {STATUS_CONFIG[statusConfig.next as OrderStatus]?.label}
                 </>
               )}
             </Button>
@@ -255,77 +261,70 @@ export default function OrderDetailPage({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Customer Info */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Shipping & Payment Info */}
         <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle
               className="flex items-center gap-2"
               style={{ color: "#E65100" }}
             >
-              <Mail className="h-5 w-5" />
-              Thông tin khách hàng
+              <Truck className="h-5 w-5" />
+              Thông tin vận chuyển
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #FFB38A 0%, #FFD3A3 100%)",
-                }}
-              >
-                <Mail className="h-5 w-5 text-[#E65100]" />
+            {order.shipping_method && (
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #FFB38A 0%, #FFD3A3 100%)",
+                  }}
+                >
+                  <Truck className="h-5 w-5 text-[#E65100]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Đơn vị vận chuyển
+                  </p>
+                  <p className="font-semibold text-lg">
+                    {order.shipping_method}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Họ tên</p>
-                <p className="font-semibold text-lg">
-                  {order.order.shipping_address.fullName}
-                </p>
-              </div>
-            </div>
+            )}
 
-            <div className="flex items-start gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #FFB38A 0%, #FFD3A3 100%)",
-                }}
-              >
-                <Phone className="h-5 w-5 text-[#E65100]" />
+            {order.tracking_code && (
+              <div className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #FFB38A 0%, #FFD3A3 100%)",
+                  }}
+                >
+                  <FileText className="h-5 w-5 text-[#E65100]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Mã vận đơn
+                  </p>
+                  <p className="font-semibold text-lg">{order.tracking_code}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Số điện thoại
-                </p>
-                <p className="font-semibold text-lg">
-                  {order.order.shipping_address.phone}
-                </p>
-              </div>
-            </div>
+            )}
 
-            <div className="flex items-start gap-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #FFB38A 0%, #FFD3A3 100%)",
-                }}
-              >
-                <MapPin className="h-5 w-5 text-[#E65100]" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Địa chỉ giao hàng
-                </p>
-                <p className="font-medium">
-                  {order.order.shipping_address.address},{" "}
-                  {order.order.shipping_address.district},{" "}
-                  {order.order.shipping_address.city}
-                </p>
-              </div>
+            <Separator />
+
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">
+                Phí vận chuyển
+              </p>
+              <p className="text-xl font-bold" style={{ color: "#FF6A00" }}>
+                {formatPrice(order.shipping_fee)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -344,69 +343,76 @@ export default function OrderDetailPage({
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm font-medium text-gray-600">Mã shop order</p>
-              <p className="font-semibold">
-                #{order.order_shop.shop_order_code}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Phương thức thanh toán
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <CreditCard className="h-4 w-4 text-[#FF6A00]" />
-                <span className="font-medium">
-                  {order.order.payment_method.name}
-                </span>
-              </div>
+              <p className="font-semibold">#{order.shop_order_code}</p>
             </div>
 
             <div>
               <p className="text-sm font-medium text-gray-600">Ngày đặt hàng</p>
-              <p className="font-medium">
-                {formatDate(order.order_shop.created_at)}
-              </p>
+              <p className="font-medium">{formatDate(order.created_at)}</p>
             </div>
 
-            {order.order_shop.paid_at && (
+            {order.paid_at && (
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Ngày thanh toán
                 </p>
-                <p className="font-medium">
-                  {formatDate(order.order_shop.paid_at)}
-                </p>
+                <p className="font-medium">{formatDate(order.paid_at)}</p>
               </div>
             )}
 
             <Separator />
 
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Tổng tiền hàng
-              </p>
-              <p className="text-xl font-bold" style={{ color: "#FF6A00" }}>
-                {formatPrice(order.order_shop.subtotal)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Phí vận chuyển
-              </p>
-              <p className="font-semibold">
-                {formatPrice(order.order_shop.shipping_fee)}
-              </p>
-            </div>
-
-            {order.order_shop.total_discount > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-600">Giảm giá</p>
-                <p className="font-semibold text-green-600">
-                  -{formatPrice(order.order_shop.total_discount)}
-                </p>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tổng tiền hàng:</span>
+                <span className="font-semibold">
+                  {formatPrice(order.subtotal)}
+                </span>
               </div>
-            )}
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Phí vận chuyển:</span>
+                <span className="font-semibold">
+                  {formatPrice(order.shipping_fee)}
+                </span>
+              </div>
+
+              {order.total_discount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Giảm giá:</span>
+                  <span className="font-semibold text-green-600">
+                    -{formatPrice(order.total_discount)}
+                  </span>
+                </div>
+              )}
+
+              {order.shop_voucher_discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Voucher shop:</span>
+                  <span className="text-green-600">
+                    -{formatPrice(order.shop_voucher_discount)}
+                  </span>
+                </div>
+              )}
+
+              {order.site_order_discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Voucher sàn:</span>
+                  <span className="text-green-600">
+                    -{formatPrice(order.site_order_discount)}
+                  </span>
+                </div>
+              )}
+
+              {order.site_shipping_discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Giảm phí ship:</span>
+                  <span className="text-green-600">
+                    -{formatPrice(order.site_shipping_discount)}
+                  </span>
+                </div>
+              )}
+            </div>
 
             <Separator />
 
@@ -420,7 +426,7 @@ export default function OrderDetailPage({
                 Tổng thanh toán
               </p>
               <p className="text-2xl font-bold text-[#E65100]">
-                {formatPrice(order.order_shop.total_amount)}
+                {formatPrice(order.total_amount)}
               </p>
             </div>
           </CardContent>
@@ -430,35 +436,46 @@ export default function OrderDetailPage({
       {/* Order Items */}
       <Card className="border-0 shadow-md">
         <CardHeader>
-          <CardTitle style={{ color: "#E65100" }}>
+          <CardTitle
+            className="flex items-center gap-2"
+            style={{ color: "#E65100" }}
+          >
+            <ShoppingBag className="h-5 w-5" />
             Sản phẩm trong đơn hàng
           </CardTitle>
-          <CardDescription>
-            {order.order_shop.items.length} sản phẩm
-          </CardDescription>
+          <CardDescription>{order.items.length} sản phẩm</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {order.order_shop.items.map((item) => (
+            {order.items.map((item) => (
               <div key={item.item_id}>
-                <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 overflow-hidden rounded-lg border-2 border-[#FFB38A]">
+                <div className="flex items-start gap-4">
+                  <div className="h-24 w-24 overflow-hidden rounded-lg border-2 border-[#FFB38A] flex-shrink-0">
                     <img
                       src={item.product_image || "/placeholder.svg"}
                       alt={item.product_name}
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-lg">{item.product_name}</p>
                     {item.sku_attributes && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {item.sku_attributes}
-                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="border-[#FFB38A]">
+                          {item.sku_attributes}
+                        </Badge>
+                        {item.reviewed && (
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            Đã đánh giá
+                          </Badge>
+                        )}
+                      </div>
                     )}
-                    <p className="text-sm text-gray-600 mt-1">
-                      {formatPrice(item.final_unit_price)} x {item.quantity}
-                    </p>
+                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                      <span>{formatPrice(item.final_unit_price)}</span>
+                      <span>×</span>
+                      <span>{item.quantity}</span>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p
@@ -467,6 +484,11 @@ export default function OrderDetailPage({
                     >
                       {formatPrice(item.total_price)}
                     </p>
+                    {item.original_unit_price !== item.final_unit_price && (
+                      <p className="text-sm text-gray-400 line-through">
+                        {formatPrice(item.original_unit_price * item.quantity)}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Separator className="mt-4" />
@@ -477,69 +499,63 @@ export default function OrderDetailPage({
       </Card>
 
       {/* Timeline */}
-      {(order.order_shop.paid_at ||
-        order.order_shop.processing_at ||
-        order.order_shop.shipped_at ||
-        order.order_shop.completed_at ||
-        order.order_shop.cancelled_at) && (
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle style={{ color: "#E65100" }}>Lịch sử đơn hàng</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {order.order_shop.created_at && (
-                <TimelineItem
-                  icon={Clock}
-                  title="Đơn hàng được tạo"
-                  time={formatDate(order.order_shop.created_at)}
-                  color="#FFB000"
-                />
-              )}
-              {order.order_shop.paid_at && (
-                <TimelineItem
-                  icon={CreditCard}
-                  title="Đã thanh toán"
-                  time={formatDate(order.order_shop.paid_at)}
-                  color="#FF8A33"
-                />
-              )}
-              {order.order_shop.processing_at && (
-                <TimelineItem
-                  icon={Package}
-                  title="Đang xử lý"
-                  time={formatDate(order.order_shop.processing_at)}
-                  color="#FF8A33"
-                />
-              )}
-              {order.order_shop.shipped_at && (
-                <TimelineItem
-                  icon={Truck}
-                  title="Đã giao cho vận chuyển"
-                  time={formatDate(order.order_shop.shipped_at)}
-                  color="#FF6A00"
-                />
-              )}
-              {order.order_shop.completed_at && (
-                <TimelineItem
-                  icon={CheckCircle}
-                  title="Hoàn thành"
-                  time={formatDate(order.order_shop.completed_at)}
-                  color="#4CAF50"
-                />
-              )}
-              {order.order_shop.cancelled_at && (
-                <TimelineItem
-                  icon={XCircle}
-                  title="Đã hủy"
-                  time={formatDate(order.order_shop.cancelled_at)}
-                  color="#9E9E9E"
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-0 shadow-md">
+        <CardHeader>
+          <CardTitle style={{ color: "#E65100" }}>Lịch sử đơn hàng</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {order.created_at && (
+              <TimelineItem
+                icon={Clock}
+                title="Đơn hàng được tạo"
+                time={formatDate(order.created_at)}
+                color="#FFB000"
+              />
+            )}
+            {order.paid_at && (
+              <TimelineItem
+                icon={CreditCard}
+                title="Đã thanh toán"
+                time={formatDate(order.paid_at)}
+                color="#FF8A33"
+              />
+            )}
+            {order.processing_at && (
+              <TimelineItem
+                icon={Package}
+                title="Đang xử lý"
+                time={formatDate(order.processing_at)}
+                color="#FF8A33"
+              />
+            )}
+            {order.shipped_at && (
+              <TimelineItem
+                icon={Truck}
+                title="Đã giao cho vận chuyển"
+                time={formatDate(order.shipped_at)}
+                color="#FF6A00"
+              />
+            )}
+            {order.completed_at && (
+              <TimelineItem
+                icon={CheckCircle}
+                title="Hoàn thành"
+                time={formatDate(order.completed_at)}
+                color="#4CAF50"
+              />
+            )}
+            {order.cancelled_at && (
+              <TimelineItem
+                icon={XCircle}
+                title="Đã hủy"
+                time={formatDate(order.cancelled_at)}
+                color="#9E9E9E"
+              />
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -558,7 +574,7 @@ function TimelineItem({
   return (
     <div className="flex items-center gap-4">
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md"
         style={{ backgroundColor: color }}
       >
         <Icon className="h-5 w-5 text-white" />

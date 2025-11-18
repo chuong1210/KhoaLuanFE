@@ -1,21 +1,12 @@
-
 // services/order-service.ts
 import axiosInstance from "@/lib/api/axios-instance";
-import type { OrderDetail, OrderStatus, OrderSearchParams, OrderSearchResponse } from "@/types/order";
+import type { ShopOrder, OrderStatus, OrderSearchParams, ShopOrdersResponse } from "@/types/order";
 
 const ORDER_API = "http://localhost:9002/v1/orders";
 
 export const orderService = {
-  // Get order by ID
-  getOrderById: async (orderId: string): Promise<OrderDetail> => {
-    const response = await axiosInstance.get<{ result: OrderDetail }>(
-      `${ORDER_API}/${orderId}`
-    );
-    return response.data.result;
-  },
-
-  // Search orders with filters
-  searchOrders: async (params: OrderSearchParams): Promise<OrderSearchResponse> => {
+  // Get all shop orders for seller
+  getShopOrders: async (params: OrderSearchParams): Promise<ShopOrdersResponse> => {
     const queryParams = new URLSearchParams();
     
     Object.entries(params).forEach(([key, value]) => {
@@ -24,10 +15,18 @@ export const orderService = {
       }
     });
 
-    const response = await axiosInstance.get<OrderSearchResponse>(
-      `${ORDER_API}/search/detail?${queryParams.toString()}`
+    const response = await axiosInstance.get<ShopOrdersResponse>(
+      `${ORDER_API}/admin/shop-orders?${queryParams.toString()}`
     );
     return response.data;
+  },
+
+  // Get order by ID
+  getOrderById: async (orderId: string): Promise<ShopOrder> => {
+    const response = await axiosInstance.get<{ result: ShopOrder }>(
+      `${ORDER_API}/admin/shop-orders/${orderId}`
+    );
+    return response.data.result;
   },
 
   // Update order status
