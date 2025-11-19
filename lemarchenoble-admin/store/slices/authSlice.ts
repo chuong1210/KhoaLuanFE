@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
+import { cookies } from '../../../seller-dashboard/lib/utils/cookies';
 
 interface AuthState {
   token: string | null
@@ -33,6 +34,7 @@ const authSlice = createSlice({
       state.role = null
       state.isAuthenticated = false
       localStorage.removeItem("token")
+      cookies.remove("token")
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload

@@ -1,5 +1,6 @@
 // services/banner-service.ts
 import { apiClient } from "@/lib/api/axios-instance"
+import { cookies } from "@/lib/utils/cookies"
 import type { Banner, BannerFormData } from "@/types/banner"
 
 const BANNER_API_BASE = "http://localhost:8000/api/Banners"
@@ -9,19 +10,28 @@ export const bannerService = {
   // Upload media file
   uploadMedia: async (file: File): Promise<string> => {
     const formData = new FormData()
+    const token = cookies.get("token"); // lấy token
+
     formData.append("media", file)
-    
+
     const response = await fetch(MEDIA_API_BASE, {
       method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
       body: formData,
     })
-    
+
     if (!response.ok) {
       throw new Error("Failed to upload media")
     }
-    
+
     const data = await response.json()
-    return data.result?.name || data.name
+    // API returns array in result: { result: ["filename.png"] }
+    if (data.result && Array.isArray(data.result) && data.result.length > 0) {
+      return data.result[0]
+    }
+    throw new Error("Invalid media upload response")
   },
 
   // Get banners with filters

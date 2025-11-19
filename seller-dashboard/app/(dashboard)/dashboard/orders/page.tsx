@@ -58,7 +58,7 @@ const STATUS_CONFIG = {
 
 export default function OrdersListPage() {
   const router = useRouter();
-  const shopId = useAppSelector((state) => state.auth.shopId);
+  const shopId = useAppSelector((state) => state.shop.data?.id);
 
   const [filters, setFilters] = useState<OrderSearchParams>({
     shop_id: shopId || undefined,

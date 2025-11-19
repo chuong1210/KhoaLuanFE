@@ -106,7 +106,6 @@ export interface CreateProductPayload {
   key: string
   description: string
   short_description: string
-  brand_id: string
   category_id: string
   shop_id: string
   product_is_permission_return: boolean
@@ -139,4 +138,52 @@ export interface ProductFilters {
   keywords?: string
   sort?: 'price_asc' | 'price_desc' | 'newest' | 'popular'
   cate_path?: string
+}
+
+
+// types/product.ts
+
+// ... (Các interface cũ giữ nguyên: Product, Brand, Category...)
+
+export interface ProductOptionValue {
+  option_name: string;
+  value: string;
+}
+
+export interface CreateProductSkuPayload {
+  sku_code: string;
+  price: number;
+  quantity: number;
+  weight: number;
+  option_value: ProductOptionValue[];
+}
+
+export interface CreateProductPayload {
+  name: string;
+  key: string;
+  description: string;
+  short_description: string;
+  brand_id: string;
+  category_id: string;
+  shop_id: string;
+  product_is_permission_return: boolean;
+  product_is_permission_check: boolean;
+
+  // Danh sách các SKU (biến thể)
+  product_sku: CreateProductSkuPayload[];
+
+  // Danh sách tất cả các option value xuất hiện trong sản phẩm (dùng để map ảnh)
+  option_value: ProductOptionValue[];
+}
+
+// Helper type cho UI state
+export interface OptionDefinition {
+  id: string;
+  name: string; // Ví dụ: Màu sắc
+  values: Array<{
+    id: string;
+    value: string; // Ví dụ: Xanh
+    image: File | null; // Ảnh riêng của option này
+    imagePreview: string;
+  }>;
 }

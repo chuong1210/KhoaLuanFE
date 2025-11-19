@@ -5,6 +5,12 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value
   const { pathname } = request.nextUrl
 
+    if (pathname === "/") {
+    if (token) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
+      return NextResponse.redirect(new URL("/login", request.url))
+  }
   // Public routes
   if (pathname === "/login") {
     if (token) {
@@ -24,5 +30,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/", "/dashboard/:path*", "/login"],
 }

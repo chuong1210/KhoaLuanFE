@@ -39,10 +39,13 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { useAppSelector } from "@/store/hooks";
 
 const CHART_COLORS = ["#FF6A00", "#FF8A33", "#FFB38A", "#FFB000", "#E65100"];
 
 export default function AnalyticsDashboardPage() {
+  const shopId = useAppSelector((state) => state.shop.data?.id);
+
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -56,15 +59,15 @@ export default function AnalyticsDashboardPage() {
     isLoading: overviewLoading,
     refetch: refetchOverview,
   } = useQuery({
-    queryKey: ["shopOverview", dateRange],
+    queryKey: ["shopOverview", dateRange, shopId],
     queryFn: () =>
-      analyticsService.getShopOverview(dateRange.start, dateRange.end),
+      analyticsService.getShopOverview(shopId!, dateRange.start, dateRange.end),
   });
 
   // Fetch wallet summary
   const { data: wallet, isLoading: walletLoading } = useQuery({
-    queryKey: ["walletSummary"],
-    queryFn: analyticsService.getWalletSummary,
+    queryKey: ["walletSummary", shopId],
+    queryFn: () => analyticsService.getWalletSummary(shopId!), // Truyền shopId
   });
 
   // Fetch revenue timeseries
@@ -79,6 +82,7 @@ export default function AnalyticsDashboardPage() {
     queryKey: ["shopOrders", dateRange],
     queryFn: () =>
       analyticsService.getShopOrders(
+        shopId!,
         undefined,
         dateRange.start,
         dateRange.end,

@@ -2,8 +2,8 @@ export interface Shop {
   id: string;
   shopName: string;
   shopDescription: string;
-  shopLogo?: string;
-  shopBanner?: string; // Optional, not in current API but added for UI completeness
+  shopLogo?: string | File | null;
+  shopBanner?: string | File | null;
   shopAddress: string;
   shopPersonalIdentifyId?: string;
   shopEmail: string;
@@ -14,9 +14,10 @@ export interface Shop {
   isFollowing: boolean;
   createdDate: string;
   taxInfo?: TaxInfo;
+  banners?: any[];
 }
-export interface Tax{
-    taxCode: string
+export interface Tax {
+  taxCode: string
   taxNationalName: string
   taxShortName?: string
   taxPresentName?: string
@@ -30,6 +31,8 @@ export interface ShopData {
   shopName: string;
   shopDescription: string;
   shopLogo: string;
+  shopBanner: string;
+
   shopEmail: string;
   shopPhone: string;
   shopStatus: boolean;
@@ -37,6 +40,9 @@ export interface ShopData {
   followerCount: number;
   isFollowing: boolean;
   createdDate: string;
+  modifiedDate: string;
+
+
 }
 
 export interface CreateShopWithTaxRequest {
@@ -56,6 +62,9 @@ export interface CreateShopWithTaxRequest {
   taxBusinessType: string;
   taxActiveStatus?: boolean;
   shopBanner?: string; // Optional for future use
+
+  // Banner fields
+  bannerType?: string; // --- NEW: HOME, CATEGORY, PROMOTION
 }
 
 export interface ApproveShopRequest {
@@ -88,7 +97,7 @@ export interface TaxInfo {
 
 
 
-export interface ShopData extends Shop {} // Alias for consistency; same as Shop
+export interface ShopData extends Shop { } // Alias for consistency; same as Shop
 
 export interface CreateShopWithTaxRequest {
   shopName: string;
@@ -106,6 +115,26 @@ export interface CreateShopWithTaxRequest {
   taxBusinessType: string;
   taxActiveStatus?: boolean;
   shopBanner?: string; // Optional for future use
+
+
+}
+// types/shop.ts
+
+// ... các interface cũ ...
+
+
+
+export interface UpdateShopRequest {
+  shopName: string;
+  shopDescription: string;
+  shopLogo?: string | File; // Có thể là URL cũ hoặc File mới
+  shopBanner?: string | File;
+  bannerType?: string; // HOME, CATEGORY, PROMOTION
+  shopEmail: string;
+  shopPhone: string;
+  shopAddress: string;
+  shopPersonalIdentifyId: string;
+  shopStatus: boolean;
 }
 
 // Form data type for the registration component
@@ -113,4 +142,7 @@ export type ShopFormData = Omit<CreateShopWithTaxRequest, 'taxCode' | 'taxNation
   shopTaxId: string; // Maps to taxCode in submission
   shopLogo?: File | string; // Allow file upload
   shopBanner?: File | string; // Allow file upload
+
+  bannerType: string; // --- NEW: Thêm loại banner
+
 };

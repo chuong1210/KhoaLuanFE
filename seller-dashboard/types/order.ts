@@ -67,3 +67,41 @@ export interface OrderSearchParams {
   limit?: number;
 }
 
+
+// types/order.ts
+
+// ... Các type cũ giữ nguyên (OrderStatus, OrderItem, ShopOrder...)
+
+// Thêm Interface cho cấu trúc Shipping Address (trong object "order")
+export interface OrderShippingAddress {
+  fullName: string;
+  phone: string;
+  address: string;
+  district: string;
+  city: string;
+}
+
+// Thêm Interface cho cấu trúc Payment Method (trong object "order")
+export interface OrderPaymentMethod {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+}
+
+// Thêm Interface cho object "order" chung
+export interface GeneralOrderInfo {
+  order_id: string;
+  order_code: string;
+  user_id: string;
+  grand_total: number;
+  shipping_address: OrderShippingAddress;
+  payment_method: OrderPaymentMethod;
+  created_at: string;
+}
+
+// --- QUAN TRỌNG: Type cho response của API getDetail ---
+export interface OrderDetailResponseResult {
+  order: GeneralOrderInfo;
+  order_shop: ShopOrder; // Đây là cái UI đang cần
+}

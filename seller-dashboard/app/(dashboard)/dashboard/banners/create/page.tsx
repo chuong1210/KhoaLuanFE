@@ -36,10 +36,11 @@ import {
 } from "lucide-react";
 import type { BannerFormData } from "@/types/banner";
 import { useAppSelector } from "@/store/hooks";
+import { isFile } from "@/lib/utils/file-utils";
 
 export default function CreateBannerPage() {
   const router = useRouter();
-  const shopId = useAppSelector((state) => state.auth.shopId);
+  const shopId = useAppSelector((state) => state.shop.data?.id);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [formData, setFormData] = useState<BannerFormData>({
     bannerName: "",
@@ -54,15 +55,19 @@ export default function CreateBannerPage() {
   });
 
   const createBannerMutation = useMutation({
-    mutationFn: (data: BannerFormData & { shopId: string }) =>
-      bannerService.createBanner(data),
-    onSuccess: () => {
+    mutationFn: async (data: BannerFormData & { shopId: string }) => {
+      console.log("Starting banner creation with data:", data);
+      return await bannerService.createBanner(data);
+    },
+    onSuccess: (data) => {
+      console.log("Banner created successfully:", data);
       toast.success("Đã tạo banner thành công", {
         description: "Banner mới đã được thêm vào danh sách",
       });
       router.push("/dashboard/banners");
     },
     onError: (error: any) => {
+      console.error("Banner creation error:", error);
       toast.error("Tạo banner thất bại", {
         description: error.message || "Vui lòng thử lại sau",
       });
@@ -227,8 +232,10 @@ export default function CreateBannerPage() {
                   </Button>
                   <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-4">
                     <p className="text-white text-sm font-medium">
-                      {formData.bannerImage instanceof File
-                        ? formData.bannerImage.name
+                      {formData.bannerImage &&
+                        typeof formData.bannerImage === "object" &&
+                        "name" in formData.bannerImage
+                        ? (formData.bannerImage as File).name
                         : "Ảnh banner"}
                     </p>
                   </div>

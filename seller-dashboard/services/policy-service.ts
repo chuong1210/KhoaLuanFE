@@ -1,30 +1,50 @@
-import { apiClient } from "@/lib/api/axios-instance"
-import type { Policy, PolicyFormData } from "@/types/policy"
+import { apiClient } from "@/lib/api/axios-instance";
+import type {
+  Policy,
+  GetPoliciesQuery,
+  CreatePolicyRequest,
+  UpdatePolicyRequest,
+  PublishPolicyRequest
+} from "@/types/policy";
 
-const POLICY_API = "http://localhost:8000/api/Policy"
+const BASE_URL = "http://localhost:8000/api/policies"; // Giả sử axios instance đã có base URL
 
 export const policyService = {
-  getPolicies: async (): Promise<Policy[]> => {
-    const response = await apiClient.get(POLICY_API)
-    return response.data.result || response.data
+  // Lấy danh sách phân trang (cho Admin/Seller Dashboard)
+  getPolicies: async (params: GetPoliciesQuery) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("pageNumber", params.pageNumber.toString());
+    queryParams.append("pageSize", params.pageSize.toString());
+    if (params.policyType && params.policyType !== "ALL") queryParams.append("policyType", params.policyType);
+    if (params.isActive !== undefined) queryParams.append("isActive", params.isActive.toString());
+    if (params.shopId) queryParams.append("shopId", params.shopId);
+
+    const response = await apiClient.get(`${BASE_URL}?${queryParams.toString()}`);
+    return response.data; // Trả về PaginatedResult
   },
 
   getPolicyById: async (id: string): Promise<Policy> => {
-    const response = await apiClient.get(`${POLICY_API}/${id}`)
-    return response.data.result || response.data
+    const response = await apiClient.get(`${BASE_URL}/${id}`);
+    return response.data.result;
   },
 
-  createPolicy: async (data: PolicyFormData): Promise<Policy> => {
-    const response = await apiClient.post(POLICY_API, data)
-    return response.data.result || response.data
+  createPolicy: async (data: CreatePolicyRequest): Promise<Policy> => {
+    const response = await apiClient.post(BASE_URL, data);
+    return response.data.result;
   },
 
-  updatePolicy: async (id: string, data: Partial<PolicyFormData>): Promise<Policy> => {
-    const response = await apiClient.put(`${POLICY_API}/${id}`, data)
-    return response.data.result || response.data
+  updatePolicy: async (id: string, data: UpdatePolicyRequest): Promise<Policy> => {
+    const response = await apiClient.put(`${BASE_URL}/${id}`, data);
+    return response.data.result;
   },
 
-  deletePolicy: async (id: string): Promise<void> => {
-    await apiClient.delete(`${POLICY_API}/${id}`)
+  deletePolicy: async (id: string): Promise<boolean> => {
+    const response = await apiClient.delete(`${BASE_URL}/${id}`);
+    return response.data.result;
   },
-}
+
+  publishPolicy: async (id: string, data: PublishPolicyRequest): Promise<Policy> => {
+    const response = await apiClient.post(`${BASE_URL}/${id}/publish`, data);
+    return response.data.result;
+  }
+};

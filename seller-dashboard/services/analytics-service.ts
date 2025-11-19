@@ -1,4 +1,3 @@
-
 // services/analytics-service.ts
 import axiosInstance from "@/lib/api/axios-instance";
 import type {
@@ -13,8 +12,9 @@ const ANALYTICS_API = "http://localhost:9004/v1/shop";
 
 export const analyticsService = {
   // Get shop overview
-  getShopOverview: async (startDate?: string, endDate?: string): Promise<ShopOverview> => {
+  getShopOverview: async (shopId: string, startDate?: string, endDate?: string): Promise<ShopOverview> => {
     const params = new URLSearchParams();
+    params.append("shop_id", shopId); // --- NEW
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
 
@@ -25,15 +25,19 @@ export const analyticsService = {
   },
 
   // Get wallet summary
-  getWalletSummary: async (): Promise<WalletSummary> => {
+  getWalletSummary: async (shopId: string): Promise<WalletSummary> => {
+    const params = new URLSearchParams();
+    params.append("shop_id", shopId); // --- NEW
+
     const response = await axiosInstance.get<{ result: WalletSummary }>(
-      `${ANALYTICS_API}/wallet/summary`
+      `${ANALYTICS_API}/wallet/summary?${params.toString()}`
     );
     return response.data.result;
   },
 
   // Get shop orders list
   getShopOrders: async (
+    shopId: string,
     status?: string,
     startDate?: string,
     endDate?: string,
@@ -41,6 +45,7 @@ export const analyticsService = {
     offset: number = 0
   ): Promise<ShopOrderListItem[]> => {
     const params = new URLSearchParams();
+    params.append("shop_id", shopId); // --- NEW
     if (status) params.append("status", status);
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
@@ -54,8 +59,9 @@ export const analyticsService = {
   },
 
   // Get revenue timeseries
-  getRevenueTimeseries: async (startDate?: string, endDate?: string): Promise<RevenueDataPoint[]> => {
+  getRevenueTimeseries: async (shopId: string, startDate?: string, endDate?: string): Promise<RevenueDataPoint[]> => {
     const params = new URLSearchParams();
+    params.append("shop_id", shopId); // --- NEW
     if (startDate) params.append("start_date", startDate);
     if (endDate) params.append("end_date", endDate);
 
@@ -67,11 +73,13 @@ export const analyticsService = {
 
   // Get voucher usage details
   getVoucherUsageDetails: async (
+    shopId: string,
     voucherId: string,
     limit: number = 20,
     offset: number = 0
   ): Promise<VoucherUsageDetail[]> => {
     const params = new URLSearchParams();
+    params.append("shop_id", shopId); // --- NEW
     params.append("limit", String(limit));
     params.append("offset", String(offset));
 

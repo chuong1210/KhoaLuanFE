@@ -1,7 +1,7 @@
 // services/product-service.ts - Product API service
 import { apiClient } from "@/lib/api/axios-instance"
-import type { 
-  Product, 
+import type {
+  Product,
   ProductDetail,
   ProductListResponse,
   CreateProductPayload,
@@ -12,6 +12,8 @@ import type {
 } from "@/types/product"
 
 const PRODUCT_API_BASE = "http://localhost:9001/v1/product"
+const CATEGORY_API_BASE = "http://localhost:9001/v1/categories"
+
 const MEDIA_API_BASE = "http://localhost:9001/v1/media"
 
 export const productService = {
@@ -29,10 +31,15 @@ export const productService = {
     return fileName
   },
 
+  getImageUrl: (fileName: string | null | undefined): string => {
+    if (!fileName) return `${MEDIA_API_BASE}/placeholder-image.jpg`; // Ảnh mặc định nếu null
+    if (fileName.startsWith("http")) return fileName; // Nếu đã là link full thì giữ nguyên
+    return `${MEDIA_API_BASE}/${fileName}`;
+  },
   // Get all products with filters
   getProducts: async (filters: ProductFilters = {}): Promise<ProductListResponse> => {
     const params = new URLSearchParams()
-    
+
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
     if (filters.brand) params.append('brand', filters.brand)
@@ -58,46 +65,53 @@ export const productService = {
   },
 
   // Create product
-  createProduct: async (data: CreateProductPayload, files: {
-    image?: File
-    media?: File[]
-    option_value_images?: File[]
-  }): Promise<Product> => {
-    const formData = new FormData()
-    
-    // Add product data as JSON string
-    formData.append('Product', JSON.stringify(data))
-    
-    // Add image file
-    if (files.image) {
-      formData.append('Image', files.image)
+  // Create product (Multipart)
+  createProduct: async (
+    data: CreateProductPayload,
+    files: {
+      image: File;
+      media?: File[];
+      option_value_images?: File[]; // Ảnh của các giá trị phân loại (VD: Ảnh màu đỏ, ảnh màu xanh)
     }
-    
-    // Add media files
+  ): Promise<Product> => {
+    const formData = new FormData();
+
+    // 1. Append JSON data
+    // Backend yêu cầu key là "product"
+    formData.append("product", JSON.stringify(data));
+
+    // 2. Append Main Image
+    formData.append("image", files.image);
+
+    // 3. Append Media Gallery
     if (files.media && files.media.length > 0) {
-      files.media.forEach(file => {
-        formData.append('Media', file)
-      })
+      files.media.forEach((file) => {
+        formData.append("media", file);
+      });
     }
-    
-    // Add option value images
+
+    // 4. Append Option Value Images
+    // Logic: Backend nhận mảng file, thứ tự file này sẽ map với thứ tự option_value có hình ảnh trong JSON
     if (files.option_value_images && files.option_value_images.length > 0) {
-      files.option_value_images.forEach((file, index) => {
-        formData.append(`option_value_images[${index}]`, file)
-      })
+      files.option_value_images.forEach((file) => {
+        // Dùng key array [] để backend nhận dạng list
+        formData.append("option_value_images", file);
+      });
     }
-    
+
     const response = await apiClient.post(
       `${PRODUCT_API_BASE}/create`,
       formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    )
-    return response.data.result
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+    return response.data.result;
   },
 
   // Update product
   updateProduct: async (
-    productId: string, 
+    productId: string,
     data: UpdateProductPayload,
     files?: {
       image?: File
@@ -106,27 +120,27 @@ export const productService = {
     }
   ): Promise<Product> => {
     const formData = new FormData()
-    
+
     // Add product data as JSON string
-    formData.append('Product', JSON.stringify(data))
-    
+    formData.append('product', JSON.stringify(data))
+
     // Add files if provided
     if (files?.image) {
       formData.append('Image', files.image)
     }
-    
+
     if (files?.media && files.media.length > 0) {
       files.media.forEach(file => {
         formData.append('Media', file)
       })
     }
-    
+
     if (files?.option_value_images && files.option_value_images.length > 0) {
       files.option_value_images.forEach((file, index) => {
         formData.append(`option_value_images[${index}]`, file)
       })
     }
-    
+
     const response = await apiClient.put(
       `${PRODUCT_API_BASE}/update/${productId}`,
       formData,
@@ -150,7 +164,7 @@ export const productService = {
   // Get categories (mock - adjust endpoint if needed)
   getCategories: async (): Promise<Category[]> => {
     // Replace with actual endpoint when available
-    const response = await apiClient.get('/categories')
-    return response.data.result || response.data
+    const response = await apiClient.get(`${CATEGORY_API_BASE}/get`)
+    return response.data.result.categories || response.data
   }
 }

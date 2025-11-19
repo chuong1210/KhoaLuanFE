@@ -21,6 +21,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+// Thêm imports cho Select
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +48,8 @@ import {
   ImageIcon,
   Calendar,
   Link as LinkIcon,
+  Filter, // Icon lọc
+  X, // Icon xóa lọc
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -48,19 +58,40 @@ import { useState } from "react";
 
 const MEDIA_BASE_URL = "http://localhost:9001/v1/media";
 
+// Định nghĩa các loại banner để dùng chung cho Select và Label
+const BANNER_TYPES = [
+  { value: "HOME", label: "Trang chủ" },
+  { value: "CATEGORY", label: "Danh mục" },
+  { value: "PRODUCT", label: "Sản phẩm" },
+  { value: "PROMOTION", label: "Khuyến mãi" },
+];
+
 export default function BannersPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  // State cho dialog xóa
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
 
+  // State cho bộ lọc
+  const [filterType, setFilterType] = useState<string>("ALL");
+
+  // Cập nhật useQuery để phụ thuộc vào filterType
   const {
     data: bannersData,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["banners"],
-    queryFn: () => bannerService.getBanners({ pageNumber: 1, pageSize: 30 }),
+    // Thêm filterType vào queryKey để tự động fetch lại khi đổi lọc
+    queryKey: ["banners", filterType],
+    queryFn: () =>
+      bannerService.getBanners({
+        pageNumber: 1,
+        pageSize: 30,
+        // Chỉ gửi bannerType nếu khác "ALL"
+        bannerType: filterType === "ALL" ? undefined : filterType
+      }),
   });
 
   const deleteBannerMutation = useMutation({
@@ -98,13 +129,8 @@ export default function BannersPage() {
   };
 
   const getBannerTypeLabel = (type: string) => {
-    const types: Record<string, string> = {
-      HOME: "Trang chủ",
-      CATEGORY: "Danh mục",
-      PRODUCT: "Sản phẩm",
-      PROMOTION: "Khuyến mãi",
-    };
-    return types[type] || type;
+    const found = BANNER_TYPES.find(t => t.value === type);
+    return found ? found.label : type;
   };
 
   const banners = bannersData?.banners || [];
@@ -112,7 +138,7 @@ export default function BannersPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2
             className="text-3xl font-bold tracking-tight"
@@ -136,6 +162,49 @@ export default function BannersPage() {
         </Button>
       </div>
 
+      {/* Thanh công cụ lọc */}
+      <div className="flex items-center gap-3 bg-white p-3 rounded-lg border shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
+          <Filter className="h-4 w-4" />
+          <span>Bộ lọc:</span>
+        </div>
+
+        <div className="w-[200px]">
+          <Select
+            value={filterType}
+            onValueChange={(value) => setFilterType(value)}
+          >
+            <SelectTrigger className="h-9 border-dashed focus:ring-0 focus:ring-offset-0 focus:border-orange-500">
+              <SelectValue placeholder="Chọn loại banner" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tất cả loại</SelectItem>
+              {BANNER_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {filterType !== "ALL" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setFilterType("ALL")}
+            className="h-9 px-2 text-muted-foreground hover:text-destructive"
+          >
+            <X className="mr-1 h-4 w-4" />
+            Xóa lọc
+          </Button>
+        )}
+
+        <div className="ml-auto text-sm text-muted-foreground">
+          Hiển thị: <span className="font-semibold text-orange-600">{banners.length}</span> kết quả
+        </div>
+      </div>
+
       <Card className="border-2 shadow-lg" style={{ borderColor: "#FFB38A" }}>
         <CardHeader
           style={{
@@ -147,7 +216,9 @@ export default function BannersPage() {
             Danh sách Banner
           </CardTitle>
           <CardDescription className="text-white/90">
-            {banners.length} banner đang được quản lý
+            {filterType === "ALL"
+              ? "Tất cả banner đang được quản lý"
+              : `Đang lọc theo: ${getBannerTypeLabel(filterType)}`}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
@@ -177,19 +248,19 @@ export default function BannersPage() {
               {banners.map((banner) => (
                 <Card
                   key={banner.id}
-                  className="overflow-hidden border-2 hover:shadow-lg transition-all"
+                  className="overflow-hidden border-2 hover:shadow-lg transition-all group"
                   style={{ borderColor: "#FFB38A" }}
                 >
-                  <div className="flex gap-4 p-4">
+                  <div className="flex flex-col sm:flex-row gap-4 p-4">
                     {/* Banner Image */}
                     <div
-                      className="relative h-32 w-48 shrink-0 overflow-hidden rounded-lg border-2"
+                      className="relative h-40 sm:h-32 sm:w-48 shrink-0 overflow-hidden rounded-lg border-2"
                       style={{ borderColor: "#FF6A00" }}
                     >
                       <img
                         src={`${MEDIA_BASE_URL}/${banner.bannerImage}`}
                         alt={banner.bannerName}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.src =
                             "/placeholder.svg?height=128&width=192";
@@ -198,7 +269,7 @@ export default function BannersPage() {
                       <div className="absolute top-2 left-2">
                         <Badge
                           variant="outline"
-                          className="bg-white/90 backdrop-blur-sm border-0 font-semibold"
+                          className="bg-white/90 backdrop-blur-sm border-0 font-semibold shadow-sm"
                           style={{ color: "#FF6A00" }}
                         >
                           #{banner.bannerOrder}
@@ -207,28 +278,28 @@ export default function BannersPage() {
                     </div>
 
                     {/* Banner Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex-1 min-w-0">
                           <h3
-                            className="text-lg font-bold truncate mb-1"
-                            style={{ color: "#E65100" }}
+                            className="text-lg font-bold truncate mb-1 group-hover:text-[#E65100] transition-colors"
+                            style={{ color: "#333" }}
                           >
                             {banner.bannerName}
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <LinkIcon className="h-3.5 w-3.5" />
-                            <span className="truncate">{banner.bannerUrl}</span>
+                            <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate max-w-[300px]">{banner.bannerUrl}</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2">
                           {banner.isActive ? (
-                            <Badge className="bg-success text-white">
+                            <Badge className="bg-green-500 hover:bg-green-600 text-white border-0">
                               Hoạt động
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">Tạm dừng</Badge>
+                            <Badge variant="secondary" className="bg-gray-200 text-gray-700">Tạm dừng</Badge>
                           )}
 
                           <DropdownMenu>
@@ -273,11 +344,12 @@ export default function BannersPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <div className="flex flex-wrap gap-3 text-sm mt-auto pt-2 border-t border-dashed border-gray-200">
+                        <div className="flex items-center gap-1.5">
                           <Badge
                             variant="outline"
-                            style={{ borderColor: "#FFB38A", color: "#E65100" }}
+                            className="font-medium"
+                            style={{ borderColor: "#FFB38A", color: "#E65100", backgroundColor: "#FFF3E0" }}
                           >
                             {getBannerTypeLabel(banner.bannerType)}
                           </Badge>
@@ -298,34 +370,32 @@ export default function BannersPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div
-                className="mb-4 flex h-20 w-20 items-center justify-center rounded-full"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-                }}
+                className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50"
               >
-                <ImageIcon className="h-10 w-10 text-white" />
+                <Filter className="h-10 w-10 text-orange-400" />
               </div>
               <h3
-                className="text-xl font-bold mb-2"
-                style={{ color: "#E65100" }}
+                className="text-xl font-bold mb-2 text-gray-900"
               >
-                Chưa có banner nào
+                {filterType === "ALL" ? "Chưa có banner nào" : "Không tìm thấy kết quả"}
               </h3>
               <p className="text-muted-foreground mb-6 max-w-md">
-                Bắt đầu tạo banner quảng cáo đầu tiên để thu hút khách hàng đến
-                cửa hàng của bạn
+                {filterType === "ALL"
+                  ? "Bắt đầu tạo banner quảng cáo đầu tiên để thu hút khách hàng."
+                  : `Chưa có banner nào thuộc loại "${getBannerTypeLabel(filterType)}". Hãy thử chọn loại khác hoặc tạo mới.`}
               </p>
               <Button
-                onClick={() => router.push("/dashboard/banners/create")}
-                className="h-11 px-6 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                onClick={() => {
+                  if (filterType !== "ALL") {
+                    setFilterType("ALL");
+                  } else {
+                    router.push("/dashboard/banners/create");
+                  }
                 }}
+                variant={filterType !== "ALL" ? "outline" : "default"}
+                className={filterType === "ALL" ? "text-white bg-orange-600 hover:bg-orange-700" : ""}
               >
-                <Plus className="mr-2 h-5 w-5" />
-                Tạo banner mới
+                {filterType !== "ALL" ? "Xóa bộ lọc" : "Tạo banner mới"}
               </Button>
             </div>
           )}

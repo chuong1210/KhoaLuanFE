@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react"; // 1. Import 'use'
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product-service";
@@ -44,8 +44,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export default function ProductDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>; // 2. Cập nhật Type thành Promise
 }) {
+  const { id } = use(params); // 3. Unwrap params bằng hook 'use'
+
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -55,12 +57,12 @@ export default function ProductDetailPage({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["product", params.id],
-    queryFn: () => productService.getProductDetail(params.id),
+    queryKey: ["product", id], // Sử dụng biến 'id' đã unwrap
+    queryFn: () => productService.getProductDetail(id),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => productService.deleteProduct(params.id),
+    mutationFn: () => productService.deleteProduct(id),
     onSuccess: () => {
       toast.success("Đã xóa sản phẩm");
       router.push("/dashboard/products");
@@ -155,7 +157,7 @@ export default function ProductDetailPage({
                 variant="secondary"
                 size="sm"
                 onClick={() =>
-                  router.push(`/dashboard/products/${params.id}/edit`)
+                  router.push(`/dashboard/products/${id}/edit`)
                 }
                 className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
               >
@@ -217,11 +219,10 @@ export default function ProductDetailPage({
                       <button
                         key={index}
                         onClick={() => setSelectedImageIndex(index)}
-                        className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
-                          selectedImageIndex === index
-                            ? "border-[#FF6A00] ring-2 ring-[#FF6A00]/30"
-                            : "border-gray-200 hover:border-[#FF6A00]/50"
-                        }`}
+                        className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${selectedImageIndex === index
+                          ? "border-[#FF6A00] ring-2 ring-[#FF6A00]/30"
+                          : "border-gray-200 hover:border-[#FF6A00]/50"
+                          }`}
                       >
                         <img
                           src={img || "/placeholder.svg"}
@@ -255,8 +256,8 @@ export default function ProductDetailPage({
                       {product.min_price === product.max_price
                         ? formatPrice(product.min_price)
                         : `${formatPrice(product.min_price)} - ${formatPrice(
-                            product.max_price
-                          )}`}
+                          product.max_price
+                        )}`}
                     </p>
                   </div>
 
@@ -284,7 +285,7 @@ export default function ProductDetailPage({
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Thương hiệu</p>
-                      <p className="font-semibold">{brand.name}</p>
+                      <p className="font-semibold">{brand?.name || "N/A"}</p>
                     </div>
                   </div>
 
@@ -294,7 +295,7 @@ export default function ProductDetailPage({
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Danh mục</p>
-                      <p className="font-semibold">{category.name}</p>
+                      <p className="font-semibold">{category?.name || "N/A"}</p>
                     </div>
                   </div>
 

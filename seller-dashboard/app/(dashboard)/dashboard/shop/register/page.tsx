@@ -4,7 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { shopService } from "@/services/shop-service";
+import { shopService } from "@/services/shop-service"; // Đảm bảo đường dẫn đúng
 import {
   Card,
   CardContent,
@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -29,15 +36,24 @@ import {
   Image as ImageIcon,
   ArrowLeft,
   CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import type { ShopFormData } from "@/types/shop";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils"; // Hàm tiện ích của shadcn (thường là clsx + twMerge)
 
 export default function ShopRegistrationPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [bannerPreview, setBannerPreview] = useState<string>("");
+
+  // State lưu danh sách lỗi từ Backend trả về
+  // Format: { "ShopName": ["Tên shop không được để trống"], "TaxCode": ["Mã thuế đã tồn tại"] }
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string[]>
+  >({});
+
   const [formData, setFormData] = useState<ShopFormData>({
     shopName: "",
     shopDescription: "",
@@ -47,33 +63,71 @@ export default function ShopRegistrationPage() {
     shopPhone: "",
     shopAddress: "",
     shopPersonalIdentifyId: "",
-    shopAddressId: "",
     shopTaxId: "",
+    bannerType: "HOME", // Mặc định
   });
 
   const createShopMutation = useMutation({
-    mutationFn: (data: ShopFormData) => shopService.createShopWithTax(data),
-    onSuccess: () => {
-      toast.success("Đã gửi yêu cầu đăng ký shop", {
-        description: "Vui lòng chờ admin phê duyệt",
+    mutationFn: async (data: ShopFormData) => {
+      // Xóa lỗi cũ trước khi gửi
+      setValidationErrors({});
+      return await shopService.createShopWithTax(data);
+    },
+    onSuccess: (data) => {
+      console.log("Shop created successfully:", data);
+      toast.success("Đăng ký shop thành công!", {
+        description: "Vui lòng chờ admin phê duyệt.",
       });
       router.push("/dashboard/shop");
     },
     onError: (error: any) => {
-      toast.error("Đăng ký shop thất bại", {
-        description: error.message || "Vui lòng thử lại sau",
-      });
+      console.error("Shop registration error:", error);
+
+      // Xử lý lỗi Validation từ Backend (400 Bad Request)
+      if (error.response?.data?.errors) {
+        setValidationErrors(error.response.data.errors);
+        toast.error("Dữ liệu không hợp lệ", {
+          description: "Vui lòng kiểm tra các trường báo đỏ bên dưới.",
+        });
+      } else {
+        // Lỗi chung khác (500, Network, etc)
+        toast.error("Đăng ký thất bại", {
+          description: error.message || "Vui lòng thử lại sau.",
+        });
+      }
     },
   });
+
+  // Hàm hiển thị lỗi dưới Input
+  const renderError = (backendFieldName: string) => {
+    const errors = validationErrors[backendFieldName];
+    if (errors && errors.length > 0) {
+      return (
+        <div className="flex items-center gap-1 mt-1.5 text-sm font-medium text-red-600 animate-in slide-in-from-top-1 fade-in duration-300">
+          <AlertCircle className="h-3.5 w-3.5" />
+          <span>{errors[0]}</span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Hàm check xem field có lỗi không để đổi màu border input
+  const hasError = (backendFieldName: string) => {
+    return (
+      validationErrors[backendFieldName] &&
+      validationErrors[backendFieldName].length > 0
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate cơ bản phía Client trước khi gửi
     if (!formData.shopTaxId) {
       toast.error("Vui lòng nhập mã số thuế");
       return;
     }
-
     if (!formData.shopLogo) {
       toast.error("Vui lòng chọn logo cửa hàng");
       return;
@@ -89,6 +143,8 @@ export default function ShopRegistrationPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // (Tùy chọn) Có thể xóa lỗi validation của trường đó ngay khi user nhập lại
+    // Nhưng để đơn giản thì cứ giữ nguyên, khi submit lại sẽ clear
   };
 
   const handleFileChange = (
@@ -130,13 +186,16 @@ export default function ShopRegistrationPage() {
       setLogoPreview("");
     } else {
       setBannerPreview("");
+      // Reset banner type về default nếu xóa banner
+      setFormData((prev) => ({ ...prev, bannerType: "HOME" }));
     }
   };
 
   const nextStep = () => {
+    // Validate sơ bộ chuyển bước
     if (currentStep === 1) {
       if (!formData.shopName || !formData.shopEmail || !formData.shopPhone) {
-        toast.error("Vui lòng điền đầy đủ thông tin cơ bản");
+        toast.error("Vui lòng điền đầy đủ thông tin bắt buộc (*)");
         return;
       }
     }
@@ -144,7 +203,6 @@ export default function ShopRegistrationPage() {
   };
 
   const prevStep = () => setCurrentStep(currentStep - 1);
-
   const progress = (currentStep / 3) * 100;
 
   return (
@@ -196,7 +254,7 @@ export default function ShopRegistrationPage() {
         {/* Step 1: Basic Info */}
         {currentStep === 1 && (
           <Card
-            className="border-2 shadow-lg"
+            className="border-2 shadow-lg animate-in fade-in slide-in-from-bottom-4"
             style={{ borderColor: "#FFB38A" }}
           >
             <CardHeader
@@ -209,7 +267,7 @@ export default function ShopRegistrationPage() {
                 Bước 1: Thông tin cơ bản
               </CardTitle>
               <CardDescription className="text-white/90">
-                Điền thông tin cơ bản về cửa hàng của bạn
+                Điền thông tin giới thiệu về cửa hàng
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -226,13 +284,16 @@ export default function ShopRegistrationPage() {
                 <Input
                   id="shopName"
                   name="shopName"
-                  type="text"
                   value={formData.shopName}
                   onChange={handleTextChange}
                   placeholder="VD: Shop Thời Trang ABC"
-                  required
-                  className="h-11 border-2 focus:border-[#FF6A00]"
+                  className={cn(
+                    "h-11 border-2 focus:border-[#FF6A00]",
+                    hasError("ShopName") &&
+                      "border-red-500 focus:border-red-500 bg-red-50"
+                  )}
                 />
+                {renderError("ShopName")}
               </div>
 
               {/* Shop Description */}
@@ -253,6 +314,7 @@ export default function ShopRegistrationPage() {
                   rows={4}
                   className="border-2 focus:border-[#FF6A00] resize-none"
                 />
+                {/* Nếu backend có validate description thì thêm renderError("ShopDescription") */}
               </div>
 
               {/* Contact Info */}
@@ -273,9 +335,13 @@ export default function ShopRegistrationPage() {
                     value={formData.shopEmail}
                     onChange={handleTextChange}
                     placeholder="shop@example.com"
-                    required
-                    className="h-11 border-2 focus:border-[#FF6A00]"
+                    className={cn(
+                      "h-11 border-2 focus:border-[#FF6A00]",
+                      hasError("ShopEmail") &&
+                        "border-red-500 focus:border-red-500 bg-red-50"
+                    )}
                   />
+                  {renderError("ShopEmail")}
                 </div>
 
                 <div className="space-y-2">
@@ -294,9 +360,13 @@ export default function ShopRegistrationPage() {
                     value={formData.shopPhone}
                     onChange={handleTextChange}
                     placeholder="0123456789"
-                    required
-                    className="h-11 border-2 focus:border-[#FF6A00]"
+                    className={cn(
+                      "h-11 border-2 focus:border-[#FF6A00]",
+                      hasError("ShopPhone") &&
+                        "border-red-500 focus:border-red-500 bg-red-50"
+                    )}
                   />
+                  {renderError("ShopPhone")}
                 </div>
               </div>
 
@@ -320,7 +390,7 @@ export default function ShopRegistrationPage() {
         {/* Step 2: Images & Address */}
         {currentStep === 2 && (
           <Card
-            className="border-2 shadow-lg"
+            className="border-2 shadow-lg animate-in fade-in slide-in-from-bottom-4"
             style={{ borderColor: "#FFB38A" }}
           >
             <CardHeader
@@ -333,7 +403,7 @@ export default function ShopRegistrationPage() {
                 Bước 2: Hình ảnh & Địa chỉ
               </CardTitle>
               <CardDescription className="text-white/90">
-                Tải lên logo và banner cho cửa hàng
+                Tải lên logo, banner và cập nhật địa chỉ
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -350,8 +420,12 @@ export default function ShopRegistrationPage() {
 
                 {!logoPreview ? (
                   <div
-                    className="border-2 border-dashed rounded-lg p-8 text-center hover:border-[#FF6A00] transition-colors cursor-pointer"
-                    style={{ borderColor: "#FFB38A", background: "#FFF0E0" }}
+                    className={cn(
+                      "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+                      hasError("ShopLogo")
+                        ? "border-red-400 bg-red-50"
+                        : "border-[#FFB38A] bg-[#FFF0E0] hover:border-[#FF6A00]"
+                    )}
                   >
                     <input
                       id="shopLogo"
@@ -361,28 +435,32 @@ export default function ShopRegistrationPage() {
                       onChange={(e) => handleFileChange(e, "shopLogo")}
                       className="hidden"
                     />
-                    <label htmlFor="shopLogo" className="cursor-pointer">
+                    <label
+                      htmlFor="shopLogo"
+                      className="cursor-pointer w-full block"
+                    >
                       <Upload
                         className="h-12 w-12 mx-auto mb-3"
-                        style={{ color: "#FF6A00" }}
+                        style={{
+                          color: hasError("ShopLogo") ? "#ef4444" : "#FF6A00",
+                        }}
                       />
                       <p
                         className="font-semibold mb-1"
-                        style={{ color: "#E65100" }}
+                        style={{
+                          color: hasError("ShopLogo") ? "#ef4444" : "#E65100",
+                        }}
                       >
                         Nhấp để tải logo lên
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        PNG, JPG (tối đa 5MB)
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Kích thước đề xuất: 400x400px
+                        PNG, JPG (tối đa 5MB) - 400x400px
                       </p>
                     </label>
                   </div>
                 ) : (
                   <div
-                    className="relative border-2 rounded-lg overflow-hidden w-48 h-48 mx-auto"
+                    className="relative border-2 rounded-lg overflow-hidden w-48 h-48 mx-auto shadow-md"
                     style={{ borderColor: "#FF6A00" }}
                   >
                     <img
@@ -394,30 +472,47 @@ export default function ShopRegistrationPage() {
                       type="button"
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 shadow-lg"
+                      className="absolute top-2 right-2 shadow-sm h-8 w-8"
                       onClick={() => handleRemoveImage("shopLogo")}
                     >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
+                {renderError("ShopLogo")}
               </div>
 
-              {/* Shop Banner */}
-              <div className="space-y-3">
-                <Label
-                  htmlFor="shopBanner"
-                  className="text-base font-semibold flex items-center gap-2"
-                  style={{ color: "#E65100" }}
-                >
-                  <ImageIcon className="h-4 w-4" />
-                  Banner cửa hàng (Tùy chọn)
-                </Label>
+              {/* Shop Banner + Banner Type */}
+              <div
+                className={cn(
+                  "space-y-3 p-4 rounded-xl border bg-white",
+                  hasError("ShopBanner")
+                    ? "border-red-200"
+                    : "border-gray-100 shadow-sm"
+                )}
+              >
+                <div className="flex justify-between items-center">
+                  <Label
+                    htmlFor="shopBanner"
+                    className="text-base font-semibold flex items-center gap-2"
+                    style={{ color: "#E65100" }}
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    Banner cửa hàng & Loại
+                  </Label>
+                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                    Tùy chọn
+                  </span>
+                </div>
 
                 {!bannerPreview ? (
                   <div
-                    className="border-2 border-dashed rounded-lg p-8 text-center hover:border-[#FF6A00] transition-colors cursor-pointer"
-                    style={{ borderColor: "#FFB38A", background: "#FFF0E0" }}
+                    className={cn(
+                      "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
+                      hasError("ShopBanner")
+                        ? "border-red-400 bg-red-50"
+                        : "border-[#FFB38A] bg-[#FFF0E0] hover:border-[#FF6A00]"
+                    )}
                   >
                     <input
                       id="shopBanner"
@@ -427,46 +522,77 @@ export default function ShopRegistrationPage() {
                       onChange={(e) => handleFileChange(e, "shopBanner")}
                       className="hidden"
                     />
-                    <label htmlFor="shopBanner" className="cursor-pointer">
+                    <label
+                      htmlFor="shopBanner"
+                      className="cursor-pointer w-full block"
+                    >
                       <Upload
-                        className="h-12 w-12 mx-auto mb-3"
-                        style={{ color: "#FF6A00" }}
+                        className="h-10 w-10 mx-auto mb-2"
+                        style={{
+                          color: hasError("ShopBanner") ? "#ef4444" : "#FF6A00",
+                        }}
                       />
                       <p
-                        className="font-semibold mb-1"
-                        style={{ color: "#E65100" }}
+                        className="font-medium mb-1 text-sm"
+                        style={{
+                          color: hasError("ShopBanner") ? "#ef4444" : "#E65100",
+                        }}
                       >
-                        Nhấp để tải banner lên
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        PNG, JPG (tối đa 5MB)
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Kích thước đề xuất: 1920x400px
+                        Tải banner (1920x400px)
                       </p>
                     </label>
                   </div>
                 ) : (
-                  <div
-                    className="relative border-2 rounded-lg overflow-hidden"
-                    style={{ borderColor: "#FF6A00" }}
-                  >
-                    <img
-                      src={bannerPreview}
-                      alt="Banner preview"
-                      className="w-full h-48 object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 shadow-lg"
-                      onClick={() => handleRemoveImage("shopBanner")}
+                  <div className="space-y-4 animate-in fade-in">
+                    <div
+                      className="relative border-2 rounded-lg overflow-hidden shadow-md"
+                      style={{ borderColor: "#FF6A00" }}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <img
+                        src={bannerPreview}
+                        alt="Banner preview"
+                        className="w-full h-40 object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={() => handleRemoveImage("shopBanner")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Select Banner Type - Chỉ hiện khi có Banner */}
+                    <div className="grid gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Loại Banner hiển thị
+                      </Label>
+                      <Select
+                        value={formData.bannerType}
+                        onValueChange={(val) =>
+                          setFormData({ ...formData, bannerType: val })
+                        }
+                      >
+                        <SelectTrigger className="w-full bg-white border-gray-300 focus:ring-[#FF6A00]">
+                          <SelectValue placeholder="Chọn vị trí hiển thị" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="HOME">Trang chủ (Home)</SelectItem>
+                          <SelectItem value="CATEGORY">
+                            Danh mục (Category)
+                          </SelectItem>
+                          <SelectItem value="PROMOTION">
+                            Khuyến mãi (Promotion)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {renderError("BannerType")}
+                    </div>
                   </div>
                 )}
+                {renderError("ShopBanner")}
               </div>
 
               {/* Address */}
@@ -487,8 +613,13 @@ export default function ShopRegistrationPage() {
                   placeholder="Nhập địa chỉ đầy đủ của cửa hàng"
                   required
                   rows={3}
-                  className="border-2 focus:border-[#FF6A00] resize-none"
+                  className={cn(
+                    "border-2 focus:border-[#FF6A00] resize-none",
+                    hasError("ShopAddress") &&
+                      "border-red-500 focus:border-red-500 bg-red-50"
+                  )}
                 />
+                {renderError("ShopAddress")}
               </div>
 
               <div className="flex gap-4">
@@ -520,7 +651,7 @@ export default function ShopRegistrationPage() {
         {/* Step 3: Legal Info */}
         {currentStep === 3 && (
           <Card
-            className="border-2 shadow-lg"
+            className="border-2 shadow-lg animate-in fade-in slide-in-from-bottom-4"
             style={{ borderColor: "#FFB38A" }}
           >
             <CardHeader
@@ -533,7 +664,7 @@ export default function ShopRegistrationPage() {
                 Bước 3: Thông tin pháp lý
               </CardTitle>
               <CardDescription className="text-white/90">
-                Cung cấp thông tin pháp lý để xác thực cửa hàng
+                Cung cấp thông tin pháp lý để xác thực
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
@@ -555,8 +686,13 @@ export default function ShopRegistrationPage() {
                     value={formData.shopPersonalIdentifyId}
                     onChange={handleTextChange}
                     placeholder="Số CMND/CCCD"
-                    className="h-11 border-2 focus:border-[#FF6A00]"
+                    className={cn(
+                      "h-11 border-2 focus:border-[#FF6A00]",
+                      hasError("ShopPersonalIdentifyId") &&
+                        "border-red-500 focus:border-red-500 bg-red-50"
+                    )}
                   />
+                  {renderError("ShopPersonalIdentifyId")}
                 </div>
 
                 <div className="space-y-2">
@@ -576,33 +712,46 @@ export default function ShopRegistrationPage() {
                     onChange={handleTextChange}
                     placeholder="Mã số thuế doanh nghiệp"
                     required
-                    className="h-11 border-2 focus:border-[#FF6A00]"
+                    className={cn(
+                      "h-11 border-2 focus:border-[#FF6A00]",
+                      hasError("TaxCode") &&
+                        "border-red-500 focus:border-red-500 bg-red-50"
+                    )}
                   />
+                  {/* Lưu ý: Backend trả về key là "TaxCode", nhưng input name là shopTaxId -> dùng renderError("TaxCode") */}
+                  {renderError("TaxCode")}
                 </div>
               </div>
 
               {/* Info Box */}
               <div
-                className="p-4 rounded-lg border-2"
+                className="p-4 rounded-lg border-2 flex gap-3"
                 style={{ borderColor: "#FFB38A", background: "#FFF0E0" }}
               >
-                <div className="flex gap-3">
-                  <CheckCircle
-                    className="h-5 w-5 flex-shrink-0 mt-0.5"
-                    style={{ color: "#FF6A00" }}
-                  />
-                  <div className="space-y-1">
-                    <p className="font-semibold" style={{ color: "#E65100" }}>
-                      Thông tin của bạn được bảo mật
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Chúng tôi sử dụng thông tin này để xác thực và bảo vệ
-                      quyền lợi của bạn. Sau khi gửi, yêu cầu sẽ được admin xem
-                      xét và phê duyệt.
-                    </p>
-                  </div>
+                <CheckCircle
+                  className="h-5 w-5 shrink-0 mt-0.5"
+                  style={{ color: "#FF6A00" }}
+                />
+                <div className="space-y-1">
+                  <p className="font-semibold" style={{ color: "#E65100" }}>
+                    Thông tin của bạn được bảo mật
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Chúng tôi sử dụng thông tin này để xác thực và bảo vệ quyền
+                    lợi của bạn.
+                  </p>
                 </div>
               </div>
+
+              {/* Error Summary (Optional) */}
+              {Object.keys(validationErrors).length > 0 && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                  <AlertCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">
+                    Vui lòng kiểm tra lại các lỗi ở các bước trước.
+                  </span>
+                </div>
+              )}
 
               {/* Submit Buttons */}
               <div className="flex gap-4 pt-4">
@@ -628,7 +777,7 @@ export default function ShopRegistrationPage() {
                   {createShopMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Đang gửi yêu cầu...
+                      Đang xử lý...
                     </>
                   ) : (
                     <>
