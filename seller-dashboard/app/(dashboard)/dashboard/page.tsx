@@ -23,6 +23,10 @@ import {
   BarChart3,
   PieChart,
   RefreshCw,
+  ArrowUpRight,
+  CreditCard,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import {
   LineChart,
@@ -38,10 +42,15 @@ import {
   PieChart as RePieChart,
   Pie,
   Cell,
+  Area,
+  AreaChart,
 } from "recharts";
 import { useAppSelector } from "@/store/hooks";
+import { cn } from "@/lib/utils";
 
-const CHART_COLORS = ["#FF6A00", "#FF8A33", "#FFB38A", "#FFB000", "#E65100"];
+// Palette màu cam hiện đại
+const CHART_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5"];
+const PRIMARY_COLOR = "#f97316"; // Orange-500
 
 export default function AnalyticsDashboardPage() {
   const shopId = useAppSelector((state) => state.shop.data?.id);
@@ -53,7 +62,7 @@ export default function AnalyticsDashboardPage() {
     end: new Date().toISOString().split("T")[0],
   });
 
-  // Fetch overview data
+  // --- DATA FETCHING LOGIC (GIỮ NGUYÊN) ---
   const {
     data: overview,
     isLoading: overviewLoading,
@@ -64,20 +73,17 @@ export default function AnalyticsDashboardPage() {
       analyticsService.getShopOverview(shopId!, dateRange.start, dateRange.end),
   });
 
-  // Fetch wallet summary
   const { data: wallet, isLoading: walletLoading } = useQuery({
     queryKey: ["walletSummary", shopId],
-    queryFn: () => analyticsService.getWalletSummary(shopId!), // Truyền shopId
+    queryFn: () => analyticsService.getWalletSummary(shopId!),
   });
 
-  // Fetch revenue timeseries
   const { data: revenueData, isLoading: revenueLoading } = useQuery({
     queryKey: ["revenueTimeseries", dateRange],
     queryFn: () =>
       analyticsService.getRevenueTimeseries(dateRange.start, dateRange.end),
   });
 
-  // Fetch orders for status distribution
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["shopOrders", dateRange],
     queryFn: () =>
@@ -90,7 +96,9 @@ export default function AnalyticsDashboardPage() {
         0
       ),
   });
+  // ----------------------------------------
 
+  // --- HELPER FUNCTIONS (GIỮ NGUYÊN) ---
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -107,16 +115,13 @@ export default function AnalyticsDashboardPage() {
     return price.toString();
   };
 
-  // Calculate order status distribution
   const getOrderStatusData = () => {
     if (!orders) return [];
-
     const statusCount: Record<string, number> = {};
     orders.forEach((order) => {
       const status = order.ShopOrder.status;
       statusCount[status] = (statusCount[status] || 0) + 1;
     });
-
     return Object.entries(statusCount).map(([name, value]) => ({
       name: getStatusLabel(name),
       value,
@@ -138,311 +143,328 @@ export default function AnalyticsDashboardPage() {
   const handleRefresh = () => {
     refetchOverview();
   };
+  // ----------------------------------------
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50/50 p-6 space-y-8 font-sans">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-orange-100/50">
         <div>
-          <h2
-            className="text-3xl font-bold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="bg-orange-100 text-orange-600 p-2 rounded-lg">
+              <BarChart3 className="h-6 w-6" />
+            </span>
             Thống kê & Phân tích
           </h2>
-          <p className="text-gray-600 mt-1">
-            Theo dõi hiệu suất kinh doanh của cửa hàng
+          <p className="text-slate-500 mt-1 text-sm ml-12">
+            Tổng quan hiệu suất kinh doanh của cửa hàng
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-500" />
+
+        <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">
+            <Calendar className="h-4 w-4 text-orange-500" />
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, start: e.target.value }))
               }
-              className="border rounded px-3 py-2 text-sm"
+              className="text-sm bg-transparent border-none outline-none text-slate-600 cursor-pointer focus:ring-0 font-medium"
             />
-            <span className="text-gray-500">đến</span>
+            <span className="text-slate-400 text-xs px-1">đến</span>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, end: e.target.value }))
               }
-              className="border rounded px-3 py-2 text-sm"
+              className="text-sm bg-transparent border-none outline-none text-slate-600 cursor-pointer focus:ring-0 font-medium"
             />
           </div>
           <Button
             onClick={handleRefresh}
-            size="sm"
-            variant="outline"
-            className="hover:bg-[#FFF0E0]"
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Overview Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Tổng doanh thu (GMV)"
           value={formatPrice(overview?.total_gmv || 0)}
           icon={TrendingUp}
-          gradient="linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)"
+          color="orange"
           loading={overviewLoading}
+          description="Tổng giá trị giao dịch"
         />
         <StatCard
           title="Doanh thu ròng"
           value={formatPrice(overview?.total_net_revenue || 0)}
           icon={DollarSign}
-          gradient="linear-gradient(135deg, #FF8A33 0%, #FFB38A 100%)"
+          color="emerald"
           loading={overviewLoading}
+          description="Thực nhận sau chiết khấu"
         />
         <StatCard
           title="Tổng đơn hàng"
           value={overview?.total_orders || 0}
           icon={ShoppingCart}
-          gradient="linear-gradient(135deg, #FFB000 0%, #FFB38A 100%)"
+          color="blue"
           loading={overviewLoading}
+          description="Đơn hàng đã tạo"
         />
         <StatCard
-          title="Đơn đang xử lý"
+          title="Đang xử lý"
           value={overview?.processing_orders || 0}
           icon={Package}
-          gradient="linear-gradient(135deg, #E65100 0%, #FF6A00 100%)"
+          color="amber"
           loading={overviewLoading}
+          description="Cần xử lý ngay"
         />
       </div>
 
-      {/* Wallet Summary */}
-      <Card className="border-0 shadow-md">
-        <CardHeader>
-          <CardTitle
-            className="flex items-center gap-2"
-            style={{ color: "#E65100" }}
-          >
-            <Wallet className="h-5 w-5" />
-            Tổng quan ví
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {walletLoading ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-24" />
-              ))}
+      {/* Wallet Summary Section */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Main Wallet Card */}
+        <Card className="border-none shadow-md bg-gradient-to-br from-orange-500 to-orange-600 text-white overflow-hidden relative lg:col-span-1">
+          <div className="absolute top-0 right-0 p-32 bg-white opacity-5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+          <div className="absolute bottom-0 left-0 p-24 bg-black opacity-5 rounded-full blur-2xl -ml-10 -mb-10"></div>
+
+          <CardContent className="p-8 flex flex-col justify-between h-full relative z-10">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-orange-100 font-medium mb-1 text-sm">Số dư khả dụng</p>
+                {walletLoading ? (
+                  <Skeleton className="h-10 w-32 bg-white/20" />
+                ) : (
+                  <h3 className="text-3xl font-bold tracking-tight">
+                    {formatPrice(wallet?.balance || 0)}
+                  </h3>
+                )}
+              </div>
+              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Wallet className="h-6 w-6 text-white" />
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-              <WalletItem
-                label="Số dư khả dụng"
-                value={formatPrice(wallet?.balance || 0)}
-                color="#4CAF50"
-              />
-              <WalletItem
-                label="Số dư chờ quyết toán"
-                value={formatPrice(wallet?.pending_balance || 0)}
-                color="#FFB000"
-              />
-              <WalletItem
+
+            <div className="mt-8 space-y-4">
+              <div className="flex justify-between items-center border-t border-white/20 pt-4">
+                <span className="text-orange-100 text-sm flex items-center gap-2">
+                  <Clock className="h-4 w-4" /> Chờ quyết toán
+                </span>
+                <span className="font-semibold">{formatPrice(wallet?.pending_balance || 0)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-orange-100 text-sm flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> Đang giữ
+                </span>
+                <span className="font-semibold">{formatPrice(wallet?.total_funds_held || 0)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Wallet Details Grid */}
+        <Card className="border-none shadow-sm bg-white lg:col-span-2">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              Lịch sử dòng tiền
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <WalletDetailItem
                 label="Tổng đã quyết toán"
                 value={formatPrice(wallet?.total_settled_revenue || 0)}
-                color="#FF6A00"
+                icon={TrendingUp}
+                className="bg-green-50 text-green-700 border-green-100"
               />
-              <WalletItem
-                label="Tổng đang giữ"
-                value={formatPrice(wallet?.total_funds_held || 0)}
-                color="#FF8A33"
-              />
-              <WalletItem
-                label="Đã rút"
+              <WalletDetailItem
+                label="Đã rút về ngân hàng"
                 value={formatPrice(wallet?.total_withdrawn || 0)}
-                color="#E65100"
+                icon={ArrowUpRight}
+                className="bg-slate-50 text-slate-700 border-slate-100"
               />
+              {/* Có thể thêm các chỉ số khác ở đây nếu cần */}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Charts Section */}
-      <Tabs defaultValue="revenue" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto">
-          <TabsTrigger value="revenue">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Biểu đồ doanh thu
-          </TabsTrigger>
-          <TabsTrigger value="orders">
-            <PieChart className="h-4 w-4 mr-2" />
-            Phân bổ đơn hàng
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="revenue" className="space-y-6">
+        <div className="flex items-center justify-center md:justify-start">
+          <TabsList className="bg-slate-100 p-1 rounded-xl">
+            <TabsTrigger
+              value="revenue"
+              className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm transition-all"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Biểu đồ doanh thu
+            </TabsTrigger>
+            <TabsTrigger
+              value="orders"
+              className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm transition-all"
+            >
+              <PieChart className="h-4 w-4 mr-2" />
+              Phân bổ đơn hàng
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="revenue">
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <CardTitle style={{ color: "#E65100" }}>
-                Doanh thu theo thời gian
-              </CardTitle>
-              <CardDescription>
-                Theo dõi GMV và doanh thu ròng trong khoảng thời gian đã chọn
-              </CardDescription>
+        <TabsContent value="revenue" className="mt-0 animate-in fade-in-50 duration-300">
+          <Card className="border-none shadow-md bg-white overflow-hidden">
+            <CardHeader className="border-b border-slate-50 pb-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-slate-800">Doanh thu theo thời gian</CardTitle>
+                  <CardDescription className="mt-1">So sánh GMV và Doanh thu thực nhận</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6 pl-0 pr-6">
               {revenueLoading ? (
-                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-[400px] w-full rounded-xl" />
               ) : revenueData && revenueData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorGmv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis
                       dataKey="date"
-                      stroke="#666"
-                      style={{ fontSize: "12px" }}
+                      stroke="#94a3b8"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      dy={10}
                     />
                     <YAxis
-                      stroke="#666"
-                      style={{ fontSize: "12px" }}
+                      stroke="#94a3b8"
+                      fontSize={12}
                       tickFormatter={formatCompactPrice}
+                      tickLine={false}
+                      axisLine={false}
+                      dx={-10}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "white",
-                        border: "1px solid #FFB38A",
-                        borderRadius: "8px",
-                      }}
-                      formatter={(value: any) => formatPrice(value)}
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend
+                      verticalAlign="top"
+                      height={36}
+                      iconType="circle"
+                      wrapperStyle={{ paddingBottom: '20px' }}
                     />
-                    <Legend />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="gmv"
-                      name="GMV"
-                      stroke="#FF6A00"
+                      name="GMV (Tổng doanh thu)"
+                      stroke="#f97316"
                       strokeWidth={3}
-                      dot={{ fill: "#FF6A00", r: 4 }}
-                      activeDot={{ r: 6 }}
+                      fillOpacity={1}
+                      fill="url(#colorGmv)"
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="net_revenue"
                       name="Doanh thu ròng"
-                      stroke="#FFB000"
+                      stroke="#10b981"
                       strokeWidth={3}
-                      dot={{ fill: "#FFB000", r: 4 }}
-                      activeDot={{ r: 6 }}
+                      fillOpacity={1}
+                      fill="url(#colorNet)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-80 flex items-center justify-center text-gray-500">
-                  Không có dữ liệu trong khoảng thời gian này
-                </div>
+                <EmptyState />
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="orders">
+        <TabsContent value="orders" className="mt-0 animate-in fade-in-50 duration-300">
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="border-0 shadow-md">
+            <Card className="border-none shadow-md bg-white">
               <CardHeader>
-                <CardTitle style={{ color: "#E65100" }}>
-                  Phân bổ trạng thái đơn hàng
-                </CardTitle>
-                <CardDescription>
-                  Tỷ lệ đơn hàng theo từng trạng thái
-                </CardDescription>
+                <CardTitle className="text-slate-800">Tỷ lệ trạng thái đơn</CardTitle>
+                <CardDescription>Phân bổ phần trăm theo trạng thái</CardDescription>
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
-                  <Skeleton className="h-80 w-full" />
+                  <Skeleton className="h-[300px] w-full rounded-xl" />
                 ) : getOrderStatusData().length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={350}>
                     <RePieChart>
                       <Pie
                         data={getOrderStatusData()}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) =>
-                          `${name}: ${((percent as number) * 100).toFixed(0)}%`
-                        }
+                        innerRadius={60}
                         outerRadius={100}
-                        fill="#8884d8"
+                        paddingAngle={5}
                         dataKey="value"
                       >
                         {getOrderStatusData().map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                          />
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" />
                     </RePieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-80 flex items-center justify-center text-gray-500">
-                    Không có dữ liệu đơn hàng
-                  </div>
+                  <EmptyState />
                 )}
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-md">
+            <Card className="border-none shadow-md bg-white">
               <CardHeader>
-                <CardTitle style={{ color: "#E65100" }}>
-                  Thống kê đơn hàng
-                </CardTitle>
-                <CardDescription>
-                  Số lượng đơn hàng theo trạng thái
-                </CardDescription>
+                <CardTitle className="text-slate-800">Số lượng đơn hàng</CardTitle>
+                <CardDescription>Chi tiết số lượng theo từng loại</CardDescription>
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
-                  <Skeleton className="h-80 w-full" />
+                  <Skeleton className="h-[300px] w-full rounded-xl" />
                 ) : getOrderStatusData().length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={getOrderStatusData()}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={getOrderStatusData()} margin={{ top: 20, right: 20, left: 20, bottom: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                       <XAxis
                         dataKey="name"
-                        stroke="#666"
-                        style={{ fontSize: "11px" }}
-                        angle={-15}
+                        stroke="#64748b"
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                        angle={-20}
                         textAnchor="end"
-                        height={80}
                       />
-                      <YAxis stroke="#666" style={{ fontSize: "12px" }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "white",
-                          border: "1px solid #FFB38A",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Bar dataKey="value" name="Số đơn">
+                      <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                      <Tooltip cursor={{ fill: '#f1f5f9' }} content={<CustomTooltip />} />
+                      <Bar dataKey="value" name="Số đơn" radius={[6, 6, 0, 0]} barSize={40}>
                         {getOrderStatusData().map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                          />
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-80 flex items-center justify-center text-gray-500">
-                    Không có dữ liệu đơn hàng
-                  </div>
+                  <EmptyState />
                 )}
               </CardContent>
             </Card>
@@ -453,74 +475,114 @@ export default function AnalyticsDashboardPage() {
   );
 }
 
+// --- SUBCOMPONENTS ---
+
 function StatCard({
   title,
   value,
   icon: Icon,
-  gradient,
+  color,
   loading,
+  description,
 }: {
   title: string;
   value: string | number;
   icon: any;
-  gradient: string;
+  color: "orange" | "blue" | "emerald" | "amber";
   loading?: boolean;
+  description?: string;
 }) {
+  const colorStyles = {
+    orange: "bg-orange-50 text-orange-600 border-orange-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+  };
+
   if (loading) {
-    return <Skeleton className="h-32" />;
+    return <Skeleton className="h-36 w-full rounded-2xl" />;
   }
 
   return (
-    <Card className="border-0 shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-      <div className="h-2 w-full" style={{ background: gradient }} />
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600">
-          {title}
-        </CardTitle>
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{ background: gradient }}
-        >
-          <Icon className="h-5 w-5 text-white" />
+    <Card className="border-none shadow-sm hover:shadow-md transition-all duration-200 bg-white overflow-hidden group">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-500">{title}</p>
+            <h3 className="text-2xl font-bold text-slate-900 mt-2 group-hover:text-orange-600 transition-colors">
+              {value}
+            </h3>
+          </div>
+          <div className={cn("p-3 rounded-xl", colorStyles[color])}>
+            <Icon className="h-5 w-5" />
+          </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className="text-2xl font-bold"
-          style={{
-            background: gradient,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          {value}
-        </div>
+        {description && (
+          <p className="text-xs text-slate-400 mt-3 flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block"></span>
+            {description}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function WalletItem({
+function WalletDetailItem({
   label,
   value,
-  color,
+  icon: Icon,
+  className,
 }: {
   label: string;
   value: string;
-  color: string;
+  icon: any;
+  className?: string;
 }) {
   return (
-    <div
-      className="p-4 rounded-lg border-l-4"
-      style={{
-        borderLeftColor: color,
-        backgroundColor: `${color}10`,
-      }}
-    >
-      <p className="text-sm font-medium text-gray-600 mb-1">{label}</p>
-      <p className="text-lg font-bold" style={{ color }}>
-        {value}
-      </p>
+    <div className={cn("p-4 rounded-xl border flex items-center gap-4", className)}>
+      <div className="h-10 w-10 rounded-full bg-white/60 flex items-center justify-center shrink-0">
+        <Icon className="h-5 w-5 opacity-80" />
+      </div>
+      <div>
+        <p className="text-sm opacity-80">{label}</p>
+        <p className="text-lg font-bold">{value}</p>
+      </div>
     </div>
   );
 }
+
+// Custom Tooltip for Recharts để đẹp hơn
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-slate-100 shadow-lg rounded-xl text-sm">
+        <p className="font-medium text-slate-800 mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-2 text-xs mb-1">
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-slate-500">{entry.name}:</span>
+            <span className="font-semibold text-slate-700">
+              {typeof entry.value === 'number' && entry.value > 1000
+                ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(entry.value)
+                : entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const EmptyState = () => (
+  <div className="h-full flex flex-col items-center justify-center text-slate-400">
+    <div className="bg-slate-50 p-4 rounded-full mb-3">
+      <BarChart3 className="h-8 w-8 opacity-50" />
+    </div>
+    <p className="text-sm font-medium">Không có dữ liệu hiển thị</p>
+  </div>
+);

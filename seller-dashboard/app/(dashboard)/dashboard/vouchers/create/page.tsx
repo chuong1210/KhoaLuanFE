@@ -42,9 +42,11 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 
 import type { VoucherFormData } from "@/types/voucher";
+import { useAppSelector } from "@/store/hooks";
 
 export default function CreateVoucherPage() {
   const router = useRouter();
+  const shopId = useAppSelector((state) => state.shop.data?.id);
 
   const [formData, setFormData] = useState<
     VoucherFormData & { user_use_str: string }
@@ -67,7 +69,7 @@ export default function CreateVoucherPage() {
   });
 
   const createVoucherMutation = useMutation({
-    mutationFn: (data: VoucherFormData) => voucherService.createVoucher(data),
+    mutationFn: (data: VoucherFormData) => voucherService.createVoucher(data, shopId),
     onSuccess: () => {
       toast.success("Đã tạo voucher thành công");
       router.push("/dashboard/vouchers");
@@ -95,8 +97,10 @@ export default function CreateVoucherPage() {
     // Prepare Payload
     const payload: VoucherFormData = {
       ...formData,
+
       start_date: new Date(formData.start_date).toISOString(),
       end_date: new Date(formData.end_date).toISOString(),
+      shop_id: shopId
     };
 
     createVoucherMutation.mutate(payload);

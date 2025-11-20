@@ -163,7 +163,7 @@ export interface CreateProductPayload {
   key: string;
   description: string;
   short_description: string;
-  brand_id: string;
+  brand_id?: string;
   category_id: string;
   shop_id: string;
   product_is_permission_return: boolean;

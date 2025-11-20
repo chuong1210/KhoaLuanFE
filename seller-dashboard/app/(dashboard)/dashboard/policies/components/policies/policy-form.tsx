@@ -2,21 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css"; // Import styles cho Quill
 import { Policy, POLICY_TYPES, PolicyType } from "@/types/policy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-    Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter
-} from "@/components/ui/card";
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    Save, ArrowLeft, FileText, Calendar, Tag, Eye, PenTool, AlertTriangle
-} from "lucide-react";
+import { Save, ArrowLeft, FileText, Calendar, Tag, Eye, PenTool, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // Interface cho props
@@ -57,18 +52,48 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    // Xử lý thay đổi nội dung từ Quill (HTML)
+    const handleContentChange = (content: string) => {
+        setFormData(prev => ({ ...prev, policyContent: content }));
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSubmit(formData);
     };
 
     // Helper render màu badge loại policy
-    const getTypeColor = (type: string) =>
-        POLICY_TYPES.find(t => t.value === type)?.color.replace("bg-", "text-") || "text-gray-600";
+    const getTypeColor = (type: string) => POLICY_TYPES.find(t => t.value === type)?.color.replace("bg-", "text-") || "text-gray-600";
+
+    // Cấu hình Quill toolbar
+    const modules = {
+        toolbar: [
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }], // Headers
+            ['bold', 'italic', 'underline', 'strike'], // Basic formatting
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }], // Lists
+            [{ 'indent': '-1' }, { 'indent': '+1' }], // Indent
+            [{ 'align': [] }], // Align
+            ['link', 'blockquote'], // Link and blockquote
+            [{ 'color': [] }, { 'background': [] }], // Color and background
+            [{ 'font': [] }], // Font family
+            [{ 'size': ['small', false, 'large', 'huge'] }], // Font size
+            ['clean'], // Remove formatting
+        ],
+    };
+
+    const formats = [
+        'header', 'bold', 'italic', 'underline', 'strike',
+        'list', 'indent', 'align', 'link', 'blockquote',
+        'color', 'background', 'font', 'size'
+    ];
+
+    // Ước lượng số ký tự (loại bỏ tags HTML)
+    const getCharacterCount = (html: string) => {
+        return html.replace(/<[^>]*>/g, '').length;
+    };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-8 max-w-6xl mx-auto pb-10">
-
             {/* --- Action Header --- */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -92,7 +117,6 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                         </p>
                     </div>
                 </div>
-
                 <div className="flex gap-3">
                     <Button
                         type="button"
@@ -125,7 +149,6 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
 
             {/* --- Main Content Grid --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
                 {/* Left Column: Meta Data */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card className="border-2 shadow-md" style={{ borderColor: "#FFB38A" }}>
@@ -136,7 +159,6 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-5 pt-6">
-
                             {/* Policy Name */}
                             <div className="space-y-2">
                                 <Label htmlFor="name" className="text-gray-700 font-semibold">
@@ -175,7 +197,8 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                                 </Select>
                                 {isEditMode && (
                                     <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <AlertTriangle className="h-3 w-3" /> Loại chính sách không thể thay đổi sau khi tạo.
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Loại chính sách không thể thay đổi sau khi tạo.
                                     </p>
                                 )}
                             </div>
@@ -232,7 +255,6 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                                 </Badge>
                             </div>
                         </CardHeader>
-
                         <CardContent className="p-0 flex-1">
                             <Tabs defaultValue="write" className="w-full h-full flex flex-col">
                                 <div className="px-6 pt-4 border-b border-gray-100 bg-white">
@@ -241,29 +263,36 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                                             value="write"
                                             className="data-[state=active]:bg-[#FF8A33] data-[state=active]:text-white"
                                         >
-                                            <PenTool className="h-4 w-4 mr-2" /> Soạn thảo
+                                            <PenTool className="h-4 w-4 mr-2" />
+                                            Soạn thảo
                                         </TabsTrigger>
                                         <TabsTrigger
                                             value="preview"
                                             className="data-[state=active]:bg-[#FF8A33] data-[state=active]:text-white"
                                         >
-                                            <Eye className="h-4 w-4 mr-2" /> Xem trước
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            Xem trước
                                         </TabsTrigger>
                                     </TabsList>
                                     <p className="text-xs text-gray-400 mt-2 mb-2">
-                                        Hỗ trợ định dạng <b>HTML</b> cơ bản hoặc văn bản thuần.
+                                        Sử dụng thanh công cụ để định dạng văn bản: tô đậm, in nghiêng, gạch dưới, thay đổi font chữ và cỡ chữ.
                                     </p>
                                 </div>
 
                                 {/* Tab Write */}
                                 <TabsContent value="write" className="flex-1 p-0 m-0 h-full min-h-[500px]">
-                                    <Textarea
-                                        placeholder="Nhập nội dung chính sách tại đây..."
-                                        className="w-full h-full min-h-[500px] resize-none border-0 rounded-none p-6 focus-visible:ring-0 text-base leading-relaxed"
-                                        value={formData.policyContent}
-                                        onChange={(e) => handleChange("policyContent", e.target.value)}
-                                        style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
-                                    />
+                                    <div className="h-full">
+                                        <ReactQuill
+                                            theme="snow"
+                                            value={formData.policyContent}
+                                            onChange={handleContentChange}
+                                            modules={modules}
+                                            formats={formats}
+                                            placeholder="Nhập nội dung chính sách tại đây..."
+                                            className="h-full"
+                                            style={{ height: '100%' }}
+                                        />
+                                    </div>
                                 </TabsContent>
 
                                 {/* Tab Preview */}
@@ -271,8 +300,7 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                                     {formData.policyContent ? (
                                         <div
                                             className="prose max-w-none p-6 bg-white shadow-sm rounded-lg border border-gray-200"
-                                            // Lưu ý: Trong thực tế nên dùng DOMPurify để sanitize HTML
-                                            dangerouslySetInnerHTML={{ __html: formData.policyContent.replace(/\n/g, '<br/>') }}
+                                            dangerouslySetInnerHTML={{ __html: formData.policyContent }}
                                         />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
@@ -283,13 +311,11 @@ export function PolicyForm({ initialData, isSubmitting, onSubmit, defaultType }:
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
-
                         <CardFooter className="bg-gray-50 border-t border-gray-100 text-xs text-gray-500 py-2 px-6">
-                            Ký tự: {formData.policyContent.length}
+                            Ký tự: {getCharacterCount(formData.policyContent)}
                         </CardFooter>
                     </Card>
                 </div>
-
             </div>
         </form>
     );

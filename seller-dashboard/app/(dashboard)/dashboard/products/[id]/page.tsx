@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react"; // 1. Import 'use'
+import { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product-service";
@@ -37,6 +37,14 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Star,
+  Box,
+  Weight,
+  ShoppingCart,
+  TrendingUp,
+  Sparkles,
+  Shield,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -44,10 +52,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export default function ProductDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>; // 2. Cập nhật Type thành Promise
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params); // 3. Unwrap params bằng hook 'use'
-
+  const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -57,7 +64,7 @@ export default function ProductDetailPage({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["product", id], // Sử dụng biến 'id' đã unwrap
+    queryKey: ["product", id],
     queryFn: () => productService.getProductDetail(id),
   });
 
@@ -89,14 +96,20 @@ export default function ProductDetailPage({
     }
   };
 
+  const getImageUrl = (fileName: string | null | undefined): string => {
+    if (!fileName) return "/placeholder-image.jpg";
+    if (fileName.startsWith("http")) return fileName;
+    return `http://localhost:9001/v1/media/${fileName}`;
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#FFF0E0] via-white to-[#FFB38A]/10 p-6">
+      <div className="min-h-screen p-6" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.12), rgba(255,179,138,0.04))" }}>
         <div className="mx-auto max-w-7xl space-y-6">
-          <Skeleton className="h-32 w-full rounded-2xl" />
-          <div className="grid gap-6 md:grid-cols-2">
-            <Skeleton className="h-96 w-full" />
-            <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-32 w-full rounded-3xl" />
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Skeleton className="h-[600px] w-full rounded-3xl" />
+            <Skeleton className="h-[600px] w-full lg:col-span-2 rounded-3xl" />
           </div>
         </div>
       </div>
@@ -105,16 +118,14 @@ export default function ProductDetailPage({
 
   if (error || !productDetail) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#FFF0E0] via-white to-[#FFB38A]/10 p-6">
-        <div className="mx-auto max-w-7xl">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Lỗi</AlertTitle>
-            <AlertDescription>
-              Không thể tải thông tin sản phẩm. Vui lòng thử lại.
-            </AlertDescription>
-          </Alert>
-        </div>
+      <div className="min-h-screen p-6 flex items-center justify-center" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.12), rgba(255,179,138,0.04))" }}>
+        <Alert variant="destructive" className="max-w-lg border-2 border-red-200 rounded-2xl shadow-xl">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="text-lg font-bold">Không thể tải sản phẩm</AlertTitle>
+          <AlertDescription className="text-base">
+            Sản phẩm không tồn tại hoặc đã bị xóa. Vui lòng thử lại.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -122,75 +133,81 @@ export default function ProductDetailPage({
   const { product, brand, category, sku, option } = productDetail;
   const mediaArray = parseMediaArray(product.media);
   const allImages = [product.image, ...mediaArray];
+  const totalStock = sku.reduce((sum, s) => sum + s.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#FFF0E0] via-white to-[#FFB38A]/10 p-6">
+    <div className="min-h-screen p-4 md:p-6 lg:p-8" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.12), rgba(255,179,138,0.04))" }}>
       <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
+
+        {/* Header Hero */}
         <div
-          className="rounded-2xl p-6 text-white shadow-xl"
-          style={{
-            background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-          }}
+          className="relative overflow-hidden rounded-3xl p-8 text-white shadow-2xl transform transition-all duration-300 hover:shadow-3xl"
+          style={{ background: "linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%)" }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-transparent"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-48 translate-x-48"></div>
+
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-5">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.back()}
-                className="h-10 w-10 text-white hover:bg-white/20"
+                className="h-12 w-12 rounded-xl text-white hover:bg-white/20 backdrop-blur-sm transition-all"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-6 w-6" />
               </Button>
-              <div className="flex items-center gap-3">
-                <Package className="h-8 w-8" />
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-lg ring-4 ring-white/30">
+                  <Package className="h-8 w-8" />
+                </div>
                 <div>
-                  <h1 className="text-2xl font-bold">Chi tiết sản phẩm</h1>
-                  <p className="text-white/90">#{product.id}</p>
+                  <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    Chi tiết sản phẩm
+                    <Sparkles className="h-7 w-7 text-[#FFD3A3]" />
+                  </h1>
+                  <p className="text-white/90 text-sm mt-1 font-medium">Mã: #{product.id.slice(0, 8)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  router.push(`/dashboard/products/${id}/edit`)
-                }
-                className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
+                size="lg"
+                onClick={() => router.push(`/dashboard/products/${id}/edit`)}
+                className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-2 border-white/40 font-semibold px-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
               >
-                <Edit className="mr-2 h-4 w-4" />
+                <Edit className="mr-2 h-5 w-5" />
                 Chỉnh sửa
               </Button>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    variant="secondary"
-                    size="sm"
-                    className="bg-red-500/20 text-white hover:bg-red-500/30 backdrop-blur-sm"
+                    size="lg"
+                    className="bg-red-500/80 text-white hover:bg-red-600 backdrop-blur-sm font-semibold px-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="mr-2 h-5 w-5" />
                     Xóa
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="rounded-2xl border-2 border-red-200">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Xác nhận xóa sản phẩm</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Hành động này không thể hoàn tác. Sản phẩm sẽ bị xóa vĩnh
-                      viễn khỏi hệ thống.
+                    <AlertDialogTitle className="text-xl text-red-600 flex items-center gap-2">
+                      <AlertCircle className="h-6 w-6" />
+                      Xác nhận xóa sản phẩm
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-base">
+                      Hành động này không thể hoàn tác. Sản phẩm <span className="font-bold text-gray-900">{product.name}</span> sẽ bị xóa vĩnh viễn khỏi hệ thống.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                    <AlertDialogCancel className="rounded-xl">Hủy bỏ</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => deleteMutation.mutate()}
-                      className="bg-red-500 hover:bg-red-600"
+                      className="bg-red-500 hover:bg-red-600 rounded-xl"
                     >
-                      Xóa
+                      Xóa ngay
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -199,281 +216,316 @@ export default function ProductDetailPage({
           </div>
         </div>
 
-        {/* Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Images */}
-          <Card className="border-[#FF6A00]/20 shadow-lg">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="aspect-square overflow-hidden rounded-xl bg-linear-to-br from-[#FFF0E0] to-white">
-                  <img
-                    src={allImages[selectedImageIndex] || "/placeholder.svg"}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-3">
 
-                {allImages.length > 1 && (
-                  <div className="grid grid-cols-5 gap-2">
-                    {allImages.map((img, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedImageIndex(index)}
-                        className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${selectedImageIndex === index
-                          ? "border-[#FF6A00] ring-2 ring-[#FF6A00]/30"
-                          : "border-gray-200 hover:border-[#FF6A00]/50"
-                          }`}
-                      >
-                        <img
-                          src={img || "/placeholder.svg"}
-                          alt={`${product.name} ${index + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ))}
+          {/* Left: Images Gallery */}
+          <div className="lg:col-span-1">
+            <Card className="border-none shadow-xl bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden sticky top-6">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {/* Main Image */}
+                  <div className="relative aspect-square overflow-hidden rounded-2xl group" style={{ background: "linear-gradient(135deg, #FFF0E0 0%, #FFB38A 50%, #FF8A33 100%)" }}>
+                    <img
+                      src={getImageUrl(allImages[selectedImageIndex])}
+                      alt={product.name}
+                      className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+                      }}
+                    />
+                    {/* Image Counter */}
+                    <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm font-semibold">
+                      {selectedImageIndex + 1} / {allImages.length}
+                    </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Product Info */}
-          <div className="space-y-6">
-            <Card className="border-[#FF6A00]/20 shadow-lg">
-              <CardHeader className="bg-linear-to-r from-[#FFF0E0] to-white border-b border-[#FF6A00]/10">
-                <CardTitle className="text-2xl text-[#FF6A00]">
-                  {product.name}
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {product.short_description}
-                </CardDescription>
+                  {/* Thumbnail Grid */}
+                  {allImages.length > 1 && (
+                    <div className="grid grid-cols-5 gap-2">
+                      {allImages.map((img, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedImageIndex(index)}
+                          className={`aspect-square overflow-hidden rounded-xl transition-all duration-300 ${selectedImageIndex === index
+                            ? "ring-4 ring-[#FF6A00] scale-105 shadow-lg"
+                            : "ring-2 ring-[#FFB38A]/30 hover:ring-[#FF6A00] hover:scale-105 opacity-70 hover:opacity-100"
+                            }`}
+                        >
+                          <img
+                            src={getImageUrl(img)}
+                            alt={`${product.name} ${index + 1}`}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right: Product Information */}
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* Product Header & Price */}
+            <Card className="border-none shadow-xl bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden">
+              <CardHeader className="pb-4" style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-3xl font-bold text-[#111111] leading-tight mb-3">
+                      {product.name}
+                    </CardTitle>
+                    <CardDescription className="text-base text-gray-700 leading-relaxed">
+                      {product.short_description}
+                    </CardDescription>
+                  </div>
+                  <Badge
+                    variant={product.delete_status === "Active" ? "default" : "destructive"}
+                    className={`text-base px-4 py-2 rounded-xl font-bold ${product.delete_status === "Active"
+                      ? "bg-gradient-to-r from-green-500 to-green-600 shadow-lg"
+                      : "bg-gradient-to-r from-red-500 to-red-600 shadow-lg"
+                      }`}
+                  >
+                    {product.delete_status === "Active" ? (
+                      <><CheckCircle className="mr-2 h-4 w-4" /> Đang bán</>
+                    ) : (
+                      <><XCircle className="mr-2 h-4 w-4" /> Ngừng bán</>
+                    )}
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6 pt-6">
-                <div className="flex items-baseline gap-4">
+
+              <CardContent className="pt-6 space-y-6">
+                {/* Price & Rating Row */}
+                <div className="flex items-center justify-between p-6 rounded-2xl" style={{ background: "linear-gradient(135deg, #FFF0E0 0%, #FFB38A 20%)" }}>
                   <div>
-                    <p className="text-sm text-gray-600">Giá bán</p>
-                    <p className="text-3xl font-bold text-[#FF6A00]">
+                    <p className="text-sm font-semibold text-[#D35400] mb-1 uppercase tracking-wider">Giá bán</p>
+                    <p className="text-4xl font-bold" style={{
+                      background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text"
+                    }}>
                       {product.min_price === product.max_price
                         ? formatPrice(product.min_price)
-                        : `${formatPrice(product.min_price)} - ${formatPrice(
-                          product.max_price
-                        )}`}
+                        : `${formatPrice(product.min_price)} - ${formatPrice(product.max_price)}`}
                     </p>
                   </div>
 
                   {product.rating && (
-                    <div>
-                      <p className="text-sm text-gray-600">Đánh giá</p>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-[#D35400] mb-1 uppercase tracking-wider">Đánh giá</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-amber-500">
-                          {product.rating.average_rating.toFixed(1)}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          ({product.rating.total_reviews} đánh giá)
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-6 w-6 ${i < Math.round(product.rating?.average_rating || 0)
+                                ? "fill-[#FFB000] text-[#FFB000]"
+                                : "text-gray-300"
+                                }`}
+                            />
+                          ))}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-2xl font-bold text-[#FFB000]">
+                            {product.rating.average_rating.toFixed(1)}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {product.rating.total_reviews} đánh giá
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="bg-[#FFB38A]/30" />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF0E0]">
-                      <Tag className="h-5 w-5 text-[#FF6A00]" />
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF0E0] to-white border-2 border-[#FFB38A]/30 transition-all hover:shadow-lg hover:scale-105">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-xl" style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}>
+                        <Tag className="h-5 w-5 text-white" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Thương hiệu</p>
-                      <p className="font-semibold">{brand?.name || "N/A"}</p>
-                    </div>
+                    <p className="text-xs text-gray-600 font-semibold uppercase mb-1">Thương hiệu</p>
+                    <p className="text-base font-bold text-[#111111]">{brand?.name || "N/A"}</p>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF0E0]">
-                      <Layers className="h-5 w-5 text-[#FF6A00]" />
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF0E0] to-white border-2 border-[#FFB38A]/30 transition-all hover:shadow-lg hover:scale-105">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-xl" style={{ background: "linear-gradient(135deg, #FF8A33 0%, #FFB38A 100%)" }}>
+                        <Layers className="h-5 w-5 text-white" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Danh mục</p>
-                      <p className="font-semibold">{category?.name || "N/A"}</p>
-                    </div>
+                    <p className="text-xs text-gray-600 font-semibold uppercase mb-1">Danh mục</p>
+                    <p className="text-base font-bold text-[#111111] line-clamp-1">{category?.name || "N/A"}</p>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF0E0]">
-                      <BarChart3 className="h-5 w-5 text-[#FF6A00]" />
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF0E0] to-white border-2 border-[#FFB38A]/30 transition-all hover:shadow-lg hover:scale-105">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-xl bg-gradient-to-r from-green-500 to-green-600">
+                        <Box className="h-4 w-4 text-white" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Tổng tồn kho</p>
-                      <p className="font-semibold">
-                        {sku.reduce((sum, s) => sum + s.quantity, 0)} sản phẩm
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-600 font-semibold uppercase mb-1">Tồn kho</p>
+                    <p className="text-base font-bold text-green-600">{totalStock} sản phẩm</p>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FFF0E0]">
-                      {product.delete_status === "Active" ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-600" />
-                      )}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF0E0] to-white border-2 border-[#FFB38A]/30 transition-all hover:shadow-lg hover:scale-105">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600">
+                        <TrendingUp className="h-4 w-4 text-white" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Trạng thái</p>
-                      <Badge
-                        variant={
-                          product.delete_status === "Active"
-                            ? "default"
-                            : "destructive"
-                        }
-                        className={
-                          product.delete_status === "Active"
-                            ? "bg-green-500"
-                            : ""
-                        }
-                      >
-                        {product.delete_status === "Active"
-                          ? "Đang bán"
-                          : "Ngừng bán"}
-                      </Badge>
-                    </div>
+                    <p className="text-xs text-gray-600 font-semibold uppercase mb-1">SKU</p>
+                    <p className="text-base font-bold text-purple-600">{sku.length} biến thể</p>
                   </div>
                 </div>
 
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    {product.product_is_permission_return && (
-                      <Badge
-                        variant="outline"
-                        className="border-green-500 text-green-700"
-                      >
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Đổi trả được
-                      </Badge>
-                    )}
-                    {product.product_is_permission_check && (
-                      <Badge
-                        variant="outline"
-                        className="border-blue-500 text-blue-700"
-                      >
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Kiểm tra được
-                      </Badge>
-                    )}
-                  </div>
+                {/* Permissions */}
+                <div className="flex flex-wrap gap-3">
+                  {product.product_is_permission_return && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-50 border-2 border-green-200">
+                      <RefreshCw className="h-5 w-5 text-green-600" />
+                      <span className="font-semibold text-green-700">Hỗ trợ đổi trả</span>
+                    </div>
+                  )}
+                  {product.product_is_permission_check && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 border-2 border-blue-200">
+                      <Shield className="h-5 w-5 text-blue-600" />
+                      <span className="font-semibold text-blue-700">Kiểm tra hàng</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
 
-        {/* Description */}
-        <Card className="border-[#FF6A00]/20 shadow-lg">
-          <CardHeader className="bg-linear-to-r from-[#FFF0E0] to-white border-b border-[#FF6A00]/10">
-            <CardTitle className="text-[#FF6A00]">Mô tả sản phẩm</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: product.description }}
-            />
-          </CardContent>
-        </Card>
+            {/* Description */}
+            <Card className="border-none shadow-xl bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden">
+              <CardHeader style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}>
+                <CardTitle className="text-xl font-bold text-[#FF6A00] flex items-center gap-2">
+                  <Package className="h-6 w-6" />
+                  Mô tả sản phẩm
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div
+                  className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{
+                    __html: product.description || "Chưa có mô tả chi tiết"
+                  }}
+                />
 
-        {/* SKU List */}
-        <Card className="border-[#FF6A00]/20 shadow-lg">
-          <CardHeader className="bg-linear-to-r from-[#FFF0E0] to-white border-b border-[#FF6A00]/10">
-            <CardTitle className="text-[#FF6A00]">
-              Phân loại hàng ({sku.length} SKU)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {sku.map((item, index) => (
-                <Card
-                  key={item.id}
-                  className="border-[#FFB38A]/30 bg-linear-to-br from-white to-[#FFF0E0]/20"
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="font-semibold text-[#FF6A00]">
-                          SKU #{index + 1}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Mã: {item.sku_code}
-                        </p>
-                        {item.sku_name && (
-                          <p className="text-sm text-gray-700">
-                            {item.sku_name}
+              </CardContent>
+            </Card>
+
+            {/* SKU Variants */}
+            <Card className="border-none shadow-xl bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden">
+              <CardHeader style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-bold text-[#FF6A00] flex items-center gap-2">
+                    <ShoppingCart className="h-6 w-6" />
+                    Danh sách phân loại hàng
+                  </CardTitle>
+                  <Badge variant="outline" className="text-base px-4 py-2 border-2 border-[#FF6A00] text-[#FF6A00] font-bold">
+                    {sku.length} SKU
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid gap-4">
+                  {sku.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="p-5 rounded-2xl border-2 border-[#FFB38A]/40 bg-gradient-to-r from-white to-[#FFF0E0]/30 transition-all hover:shadow-lg hover:border-[#FF6A00]"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl font-bold text-white text-lg" style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-[#111111] text-lg mb-1">
+                              {item.sku_name || `SKU #${index + 1}`}
+                            </p>
+                            <p className="text-sm text-gray-600 font-mono bg-gray-100 inline-block px-3 py-1 rounded-lg">
+                              {item.sku_code}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="text-2xl font-bold mb-2" style={{
+                            background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            backgroundClip: "text"
+                          }}>
+                            {formatPrice(item.price)}
                           </p>
-                        )}
-                      </div>
-
-                      <div className="text-right space-y-1">
-                        <p className="text-lg font-bold text-[#FF6A00]">
-                          {formatPrice(item.price)}
-                        </p>
-                        <div className="flex gap-4 text-sm">
-                          <span className="text-gray-600">
-                            Tồn:{" "}
-                            <span className="font-semibold">
-                              {item.quantity}
-                            </span>
-                          </span>
-                          <span className="text-gray-600">
-                            KL:{" "}
-                            <span className="font-semibold">
-                              {item.weight}kg
-                            </span>
-                          </span>
+                          <div className="flex gap-4 text-sm">
+                            <div className="flex items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-lg">
+                              <Box className="h-4 w-4 text-green-600" />
+                              <span className="font-semibold text-green-700">{item.quantity}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg">
+                              <Weight className="h-4 w-4 text-blue-600" />
+                              <span className="font-semibold text-blue-700">{item.weight}kg</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Options */}
-        {option && option.length > 0 && (
-          <Card className="border-[#FF6A00]/20 shadow-lg">
-            <CardHeader className="bg-linear-to-r from-[#FFF0E0] to-white border-b border-[#FF6A00]/10">
-              <CardTitle className="text-[#FF6A00]">
-                Thuộc tính sản phẩm
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                {option.map((opt, index) => (
-                  <div key={index} className="grid gap-2 md:grid-cols-4">
-                    <div className="font-semibold text-[#FF6A00]">
-                      {opt.option_name}
-                    </div>
-                    <div className="md:col-span-3">
-                      <div className="flex flex-wrap gap-2">
-                        {opt.values.map((val, vIndex) => (
-                          <Badge
-                            key={vIndex}
-                            variant="outline"
-                            className="border-[#FF6A00]/30 bg-[#FFF0E0]/50"
-                          >
-                            {val.value}
-                          </Badge>
-                        ))}
+            {/* Options/Attributes */}
+            {option && option.length > 0 && (
+              <Card className="border-none shadow-xl bg-white/95 backdrop-blur-sm rounded-3xl overflow-hidden">
+                <CardHeader style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}>
+                  <CardTitle className="text-xl font-bold text-[#FF6A00] flex items-center gap-2">
+                    <Layers className="h-6 w-6" />
+                    Thuộc tính & Phân loại
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-5">
+                    {option.map((opt, index) => (
+                      <div key={index} className="p-4 rounded-2xl bg-gradient-to-r from-[#FFF0E0] to-white border-2 border-[#FFB38A]/30">
+                        <p className="font-bold text-[#FF6A00] text-base mb-3 flex items-center gap-2">
+                          <Tag className="h-5 w-5" />
+                          {opt.option_name}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {opt.values.map((val, vIndex) => (
+                            <Badge
+                              key={vIndex}
+                              variant="outline"
+                              className="text-sm px-4 py-2 border-2 border-[#FF8A33] bg-white text-[#111111] font-semibold hover:bg-[#FFF0E0] transition-all"
+                            >
+                              {val.value}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );

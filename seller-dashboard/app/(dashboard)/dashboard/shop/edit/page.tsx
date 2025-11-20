@@ -42,12 +42,14 @@ import type { UpdateShopRequest } from "@/types/shop";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAppSelector } from "@/store/hooks";
 
 const MEDIA_BASE_URL = "http://localhost:9001/v1/media";
 
 export default function EditShopPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const shopId = useAppSelector((state) => state.shop.data?.id);
 
   // State lưu lỗi validation từ Backend
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});

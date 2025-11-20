@@ -25,6 +25,7 @@ export interface Voucher {
 
 export interface VoucherFormData {
   name: string;
+  shop_id?: string;
   voucher_code: string;
   discount_type: "PERCENTAGE" | "FIXED_AMOUNT";
   discount_value: number;
@@ -46,4 +47,16 @@ export interface VoucherUsageDetail {
   user_id: string;
   discount_amount: string;
   used_at: string;
+}
+
+export interface GetVoucherParams {
+  page: number;
+  page_size: number;
+  shop_id: string;
+  name?: string;          // Dùng chung cho search
+  voucher_code?: string;  // Dùng chung cho search
+  status?: string;        // ACTIVE, UPCOMING...
+  is_active?: boolean;
+  sort_by?: string;       // end_date_asc, created_at_desc...
+  discount_type?: string; // PERCENTAGE, FIXED_AMOUNT
 }

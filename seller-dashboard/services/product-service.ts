@@ -31,6 +31,18 @@ export const productService = {
     return fileName
   },
 
+  // Helper lấy URL ảnh
+  // Hàm lấy file Blob từ URL (để chuyển đổi ảnh từ server thành File object gửi lên API create)
+  // Vì API create yêu cầu Multipart File, mà ta chỉ có URL ảnh từ server media
+  urlToFile: async (url: string, filename: string, mimeType: string): Promise<File> => {
+    const res = await fetch(url);
+    const buf = await res.arrayBuffer();
+    return new File([buf], filename, { type: mimeType });
+  },
+
+  // Hàm lấy file Blob từ URL (để chuyển đổi ảnh từ server thành File object gửi lên API create)
+  // Vì API create yêu cầu Multipart File, mà ta chỉ có URL ảnh từ server media
+
   getImageUrl: (fileName: string | null | undefined): string => {
     if (!fileName) return `${MEDIA_API_BASE}/placeholder-image.jpg`; // Ảnh mặc định nếu null
     if (fileName.startsWith("http")) return fileName; // Nếu đã là link full thì giữ nguyên

@@ -39,9 +39,9 @@ export default function CreatePolicyPage() {
       policyContent: formData.policyContent,
       policyType: formData.policyType,
       effectiveDate: formData.effectiveDate || undefined,
-      shopId: shopId,
-      // ShopId sẽ được backend tự xử lý nếu user là Seller
+      shopId: shopId, // ShopId sẽ được backend tự xử lý nếu user là Seller
     };
+
     createMutation.mutate(requestData);
   };
 
