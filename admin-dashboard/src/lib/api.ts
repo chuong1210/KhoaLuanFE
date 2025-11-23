@@ -6,7 +6,7 @@ export const API_URLS = {
   ORDER: process.env.NEXT_PUBLIC_ORDER_API || 'http://localhost:9002/v1',
   SHOP: process.env.NEXT_PUBLIC_SHOP_API || 'http://localhost:8000/api',
   ANALYTICS: process.env.NEXT_PUBLIC_ANALYTICS_API || 'http://localhost:9004/v1',
-  AUTH: process.env.NEXT_PUBLIC_AUTH_API || 'http://localhost:7071/identity',
+  AUTH: process.env.NEXT_PUBLIC_AUTH_API || 'https://lemarchenoble.id.vn/api/v1/identity',
 }
 
 // Create axios instances for different services
