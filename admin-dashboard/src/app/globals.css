@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables cho Le Marchenoble Brand */
+:root {
+  /* Solid Colors */
+  --orange-vivid: #FF6A00;
+  --orange-warm: #FF8A33;
+  --orange-peach: #FFB38A;
+  --orange-amber: #FFB000;
+  --orange-deep: #E65100;
+  --orange-terracotta: #D35400;
+  --orange-apricot: #FFF0E0;
+
+  /* Gradients */
+  --gradient-sunrise: linear-gradient(135deg, #FF6A00 0%, #FFB000 100%);
+  --gradient-warm-peach: linear-gradient(90deg, #FF8A33 0%, #FFB38A 100%);
+  --gradient-deep-ember: linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%);
+  --gradient-tangerine: linear-gradient(180deg, #FF6A00 10%, #FF8A33 50%, #FFB38A 100%);
+  --gradient-sunset-violet: linear-gradient(90deg, #FF6A00 0%, #FF8A33 50%, #8E44AD 100%);
+  --gradient-soft-glow: linear-gradient(180deg, rgba(255,106,0,0.12), rgba(255,179,138,0.04));
+
+  /* Semantic */
+  --background: #FAFAFA;
+  --foreground: #111111;
+  --card: #FFFFFF;
+  --card-foreground: #111111;
+  --popover: #FFFFFF;
+  --popover-foreground: #111111;
+  --primary: #FF6A00;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FF8A33;
+  --secondary-foreground: #000000;
+  --muted: #FFF0E0;
+  --muted-foreground: #6B7280;
+  --accent: #FFB38A;
+  --accent-foreground: #000000;
+  --destructive: #E65100;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #FF6A00;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--orange-apricot);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--orange-peach);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--orange-warm);
+  }
+}
+
+@layer components {
+  /* Custom Button Styles */
+  .btn-primary {
+    @apply bg-gradient-sunrise text-white font-medium py-2 px-4 rounded-lg
+           hover:opacity-90 transition-all duration-200 shadow-orange-md
+           focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .btn-secondary {
+    @apply bg-gradient-warm-peach text-black font-medium py-2 px-4 rounded-lg
+           hover:opacity-90 transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-secondary/50;
+  }
+
+  .btn-destructive {
+    @apply bg-orange-deep text-white font-medium py-2 px-4 rounded-lg
+           hover:bg-orange-terracotta transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-destructive/50;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary font-medium py-2 px-4 rounded-lg
+           hover:bg-primary hover:text-white transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  .btn-ghost {
+    @apply text-primary font-medium py-2 px-4 rounded-lg
+           hover:bg-orange-apricot transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary/50;
+  }
+
+  /* Card Styles */
+  .card-gradient {
+    @apply bg-gradient-soft-glow border border-orange-peach/30 rounded-xl
+           shadow-orange-md hover:shadow-orange-lg transition-shadow duration-200;
+  }
+
+  .card-highlight {
+    @apply bg-gradient-sunrise text-white rounded-xl shadow-orange-lg;
+  }
+
+  /* Stats Card */
+  .stats-card {
+    @apply bg-white rounded-xl p-6 shadow-orange-sm border border-orange-peach/20
+           hover:shadow-orange-md transition-all duration-200;
+  }
+
+  /* Table Styles */
+  .table-container {
+    @apply bg-white rounded-xl shadow-orange-sm border border-orange-peach/20 overflow-hidden;
+  }
+
+  .table-header {
+    @apply bg-gradient-soft-glow;
+  }
+
+  .table-row-hover {
+    @apply hover:bg-orange-apricot/50 transition-colors duration-150;
+  }
+
+  /* Status Badge Styles */
+  .badge-success {
+    @apply bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-warning {
+    @apply bg-orange-amber/20 text-orange-terracotta px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-error {
+    @apply bg-orange-deep/20 text-orange-deep px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-processing {
+    @apply bg-orange-warm/20 text-orange-vivid px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Sidebar */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600
+           hover:bg-orange-apricot hover:text-primary transition-all duration-200;
+  }
+
+  .sidebar-item-active {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg
+           bg-gradient-sunrise text-white shadow-orange-md;
+  }
+
+  /* Input Styles */
+  .input-primary {
+    @apply w-full px-4 py-2.5 border border-orange-peach/50 rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
+           placeholder:text-gray-400 transition-all duration-200;
+  }
+
+  /* Loading Skeleton */
+  .skeleton {
+    @apply animate-pulse bg-orange-peach/30 rounded;
+  }
+
+  /* Progress Bar */
+  .progress-bar {
+    @apply h-2 rounded-full bg-gradient-tangerine;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: animate-in 0.3s ease-out;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
