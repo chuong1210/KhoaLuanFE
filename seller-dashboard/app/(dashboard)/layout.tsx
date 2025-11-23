@@ -77,10 +77,25 @@ export default function DashboardLayout({
 
   if (!isInitialized || isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div
+        className="flex h-screen items-center justify-center"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,106,0,0.05) 0%, rgba(255,240,224,0.3) 100%)",
+        }}
+      >
         <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <p className="mt-4 text-muted-foreground">Đang tải...</p>
+          <div
+            className="h-12 w-12 animate-spin rounded-full border-4 border-t-transparent mx-auto"
+            style={{ borderColor: "#FFB38A", borderTopColor: "transparent" }}
+          ></div>
+          <div
+            className="h-12 w-12 absolute animate-pulse rounded-full -mt-12"
+            style={{
+              background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+              opacity: 0.2,
+            }}
+          ></div>
+          <p className="mt-6 text-[#78716C] font-medium">Đang tải...</p>
         </div>
       </div>
     );
@@ -155,11 +170,18 @@ export default function DashboardLayout({
     : [allMenuItems[0], allMenuItems[1]];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-[#FAFAF9]">
       <DashboardSidebar menuItems={menuItems} currentPath={pathname} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <DashboardHeader />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{
+            background: "linear-gradient(180deg, rgba(255,106,0,0.02) 0%, rgba(255,240,224,0.15) 100%)",
+          }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

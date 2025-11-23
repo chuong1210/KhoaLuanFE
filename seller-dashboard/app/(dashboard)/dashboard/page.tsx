@@ -27,6 +27,7 @@ import {
   CreditCard,
   Clock,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import {
   LineChart,
@@ -48,9 +49,9 @@ import {
 import { useAppSelector } from "@/store/hooks";
 import { cn } from "@/lib/utils";
 
-// Palette màu cam hiện đại
-const CHART_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5"];
-const PRIMARY_COLOR = "#f97316"; // Orange-500
+// Orange Palette Colors
+const CHART_COLORS = ["#FF6A00", "#FF8A33", "#FFB38A", "#FFB000", "#E65100"];
+const PRIMARY_COLOR = "#FF6A00";
 
 export default function AnalyticsDashboardPage() {
   const shopId = useAppSelector((state) => state.shop.data?.id);
@@ -62,7 +63,7 @@ export default function AnalyticsDashboardPage() {
     end: new Date().toISOString().split("T")[0],
   });
 
-  // --- DATA FETCHING LOGIC (GIỮ NGUYÊN) ---
+  // --- DATA FETCHING LOGIC ---
   const {
     data: overview,
     isLoading: overviewLoading,
@@ -96,9 +97,8 @@ export default function AnalyticsDashboardPage() {
         0
       ),
   });
-  // ----------------------------------------
 
-  // --- HELPER FUNCTIONS (GIỮ NGUYÊN) ---
+  // --- HELPER FUNCTIONS ---
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -143,50 +143,70 @@ export default function AnalyticsDashboardPage() {
   const handleRefresh = () => {
     refetchOverview();
   };
-  // ----------------------------------------
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-6 space-y-8 font-sans">
+    <div
+      className="min-h-screen p-6 lg:p-8 space-y-8"
+      style={{
+        background: "linear-gradient(180deg, rgba(255,106,0,0.03) 0%, rgba(255,240,224,0.3) 100%)",
+      }}
+    >
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-orange-100/50">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <span className="bg-orange-100 text-orange-600 p-2 rounded-lg">
-              <BarChart3 className="h-6 w-6" />
-            </span>
-            Thống kê & Phân tích
-          </h2>
-          <p className="text-slate-500 mt-1 text-sm ml-12">
-            Tổng quan hiệu suất kinh doanh của cửa hàng
-          </p>
+      <div
+        className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 p-6 rounded-2xl border border-[#FFB38A]/20"
+        style={{
+          background: "linear-gradient(135deg, #FFFFFF 0%, #FFF0E0 100%)",
+          boxShadow: "0 4px 20px rgba(255, 106, 0, 0.06)",
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+            }}
+          >
+            <BarChart3 className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-[#1C1917]">
+              Thống kê & Phân tích
+            </h2>
+            <p className="text-[#78716C] mt-1 text-sm">
+              Tổng quan hiệu suất kinh doanh của cửa hàng
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">
-            <Calendar className="h-4 w-4 text-orange-500" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[#FFB38A]/30"
+            style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}
+          >
+            <Calendar className="h-4 w-4 text-[#FF6A00]" />
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, start: e.target.value }))
               }
-              className="text-sm bg-transparent border-none outline-none text-slate-600 cursor-pointer focus:ring-0 font-medium"
+              className="text-sm bg-transparent border-none outline-none text-[#1C1917] cursor-pointer focus:ring-0 font-medium"
             />
-            <span className="text-slate-400 text-xs px-1">đến</span>
+            <span className="text-[#78716C] text-xs px-1">đến</span>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) =>
                 setDateRange((prev) => ({ ...prev, end: e.target.value }))
               }
-              className="text-sm bg-transparent border-none outline-none text-slate-600 cursor-pointer focus:ring-0 font-medium"
+              className="text-sm bg-transparent border-none outline-none text-[#1C1917] cursor-pointer focus:ring-0 font-medium"
             />
           </div>
           <Button
             onClick={handleRefresh}
             size="icon"
-            variant="ghost"
-            className="h-9 w-9 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+            variant="outline"
+            className="h-10 w-10"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -215,7 +235,7 @@ export default function AnalyticsDashboardPage() {
           title="Tổng đơn hàng"
           value={overview?.total_orders || 0}
           icon={ShoppingCart}
-          color="blue"
+          color="amber"
           loading={overviewLoading}
           description="Đơn hàng đã tạo"
         />
@@ -223,7 +243,7 @@ export default function AnalyticsDashboardPage() {
           title="Đang xử lý"
           value={overview?.processing_orders || 0}
           icon={Package}
-          color="amber"
+          color="deep"
           loading={overviewLoading}
           description="Cần xử lý ngay"
         />
@@ -232,14 +252,23 @@ export default function AnalyticsDashboardPage() {
       {/* Wallet Summary Section */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Wallet Card */}
-        <Card className="border-none shadow-md bg-gradient-to-br from-orange-500 to-orange-600 text-white overflow-hidden relative lg:col-span-1">
-          <div className="absolute top-0 right-0 p-32 bg-white opacity-5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-          <div className="absolute bottom-0 left-0 p-24 bg-black opacity-5 rounded-full blur-2xl -ml-10 -mb-10"></div>
+        <div
+          className="rounded-2xl overflow-hidden relative lg:col-span-1 shadow-xl"
+          style={{
+            background: "linear-gradient(135deg, #FF6A00 0%, #E65100 100%)",
+          }}
+        >
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10" />
 
-          <CardContent className="p-8 flex flex-col justify-between h-full relative z-10">
+          <div className="p-8 flex flex-col justify-between h-full relative z-10 text-white">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-orange-100 font-medium mb-1 text-sm">Số dư khả dụng</p>
+                <p className="text-white/70 font-medium mb-2 text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Số dư khả dụng
+                </p>
                 {walletLoading ? (
                   <Skeleton className="h-10 w-32 bg-white/20" />
                 ) : (
@@ -248,35 +277,48 @@ export default function AnalyticsDashboardPage() {
                   </h3>
                 )}
               </div>
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+              <div
+                className="p-3 rounded-xl backdrop-blur-sm"
+                style={{ background: "rgba(255,255,255,0.15)" }}
+              >
                 <Wallet className="h-6 w-6 text-white" />
               </div>
             </div>
 
             <div className="mt-8 space-y-4">
               <div className="flex justify-between items-center border-t border-white/20 pt-4">
-                <span className="text-orange-100 text-sm flex items-center gap-2">
+                <span className="text-white/70 text-sm flex items-center gap-2">
                   <Clock className="h-4 w-4" /> Chờ quyết toán
                 </span>
-                <span className="font-semibold">{formatPrice(wallet?.pending_balance || 0)}</span>
+                <span className="font-semibold">
+                  {formatPrice(wallet?.pending_balance || 0)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-orange-100 text-sm flex items-center gap-2">
+                <span className="text-white/70 text-sm flex items-center gap-2">
                   <CreditCard className="h-4 w-4" /> Đang giữ
                 </span>
-                <span className="font-semibold">{formatPrice(wallet?.total_funds_held || 0)}</span>
+                <span className="font-semibold">
+                  {formatPrice(wallet?.total_funds_held || 0)}
+                </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Wallet Details Grid */}
-        <Card className="border-none shadow-sm bg-white lg:col-span-2">
+        <Card className="lg:col-span-2 border-[#FFB38A]/20">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CardTitle className="text-lg font-semibold text-[#1C1917] flex items-center gap-2">
+              <div
+                className="p-2 rounded-lg"
+                style={{ background: "rgba(22, 163, 74, 0.1)" }}
+              >
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              </div>
               Lịch sử dòng tiền
             </CardTitle>
+            <CardDescription>Tổng quan về các giao dịch tài chính</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -284,15 +326,14 @@ export default function AnalyticsDashboardPage() {
                 label="Tổng đã quyết toán"
                 value={formatPrice(wallet?.total_settled_revenue || 0)}
                 icon={TrendingUp}
-                className="bg-green-50 text-green-700 border-green-100"
+                colorClass="bg-emerald-50 text-emerald-700 border-emerald-100"
               />
               <WalletDetailItem
                 label="Đã rút về ngân hàng"
                 value={formatPrice(wallet?.total_withdrawn || 0)}
                 icon={ArrowUpRight}
-                className="bg-slate-50 text-slate-700 border-slate-100"
+                colorClass="bg-[#FFF0E0] text-[#E65100] border-[#FFB38A]/30"
               />
-              {/* Có thể thêm các chỉ số khác ở đây nếu cần */}
             </div>
           </CardContent>
         </Card>
@@ -301,17 +342,20 @@ export default function AnalyticsDashboardPage() {
       {/* Charts Section */}
       <Tabs defaultValue="revenue" className="space-y-6">
         <div className="flex items-center justify-center md:justify-start">
-          <TabsList className="bg-slate-100 p-1 rounded-xl">
+          <TabsList
+            className="p-1.5 rounded-xl border border-[#FFB38A]/20"
+            style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}
+          >
             <TabsTrigger
               value="revenue"
-              className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm transition-all"
+              className="rounded-lg px-6 py-2.5 text-[#78716C] data-[state=active]:bg-white data-[state=active]:text-[#FF6A00] data-[state=active]:shadow-sm data-[state=active]:font-semibold transition-all"
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Biểu đồ doanh thu
             </TabsTrigger>
             <TabsTrigger
               value="orders"
-              className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm transition-all"
+              className="rounded-lg px-6 py-2.5 text-[#78716C] data-[state=active]:bg-white data-[state=active]:text-[#FF6A00] data-[state=active]:shadow-sm data-[state=active]:font-semibold transition-all"
             >
               <PieChart className="h-4 w-4 mr-2" />
               Phân bổ đơn hàng
@@ -319,13 +363,17 @@ export default function AnalyticsDashboardPage() {
           </TabsList>
         </div>
 
-        <TabsContent value="revenue" className="mt-0 animate-in fade-in-50 duration-300">
-          <Card className="border-none shadow-md bg-white overflow-hidden">
-            <CardHeader className="border-b border-slate-50 pb-6">
+        <TabsContent value="revenue" className="mt-0 animate-fade-in">
+          <Card className="border-[#FFB38A]/20 overflow-hidden">
+            <CardHeader className="border-b border-[#FFB38A]/10 pb-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle className="text-slate-800">Doanh thu theo thời gian</CardTitle>
-                  <CardDescription className="mt-1">So sánh GMV và Doanh thu thực nhận</CardDescription>
+                  <CardTitle className="text-[#1C1917]">
+                    Doanh thu theo thời gian
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    So sánh GMV và Doanh thu thực nhận
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -334,28 +382,31 @@ export default function AnalyticsDashboardPage() {
                 <Skeleton className="h-[400px] w-full rounded-xl" />
               ) : revenueData && revenueData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <AreaChart
+                    data={revenueData}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="colorGmv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#FF6A00" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#FF6A00" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#FFB38A" strokeOpacity={0.3} />
                     <XAxis
                       dataKey="date"
-                      stroke="#94a3b8"
+                      stroke="#78716C"
                       fontSize={12}
                       tickLine={false}
                       axisLine={false}
                       dy={10}
                     />
                     <YAxis
-                      stroke="#94a3b8"
+                      stroke="#78716C"
                       fontSize={12}
                       tickFormatter={formatCompactPrice}
                       tickLine={false}
@@ -367,13 +418,13 @@ export default function AnalyticsDashboardPage() {
                       verticalAlign="top"
                       height={36}
                       iconType="circle"
-                      wrapperStyle={{ paddingBottom: '20px' }}
+                      wrapperStyle={{ paddingBottom: "20px" }}
                     />
                     <Area
                       type="monotone"
                       dataKey="gmv"
                       name="GMV (Tổng doanh thu)"
-                      stroke="#f97316"
+                      stroke="#FF6A00"
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorGmv)"
@@ -396,11 +447,11 @@ export default function AnalyticsDashboardPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="orders" className="mt-0 animate-in fade-in-50 duration-300">
+        <TabsContent value="orders" className="mt-0 animate-fade-in">
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="border-none shadow-md bg-white">
+            <Card className="border-[#FFB38A]/20">
               <CardHeader>
-                <CardTitle className="text-slate-800">Tỷ lệ trạng thái đơn</CardTitle>
+                <CardTitle className="text-[#1C1917]">Tỷ lệ trạng thái đơn</CardTitle>
                 <CardDescription>Phân bổ phần trăm theo trạng thái</CardDescription>
               </CardHeader>
               <CardContent>
@@ -419,7 +470,11 @@ export default function AnalyticsDashboardPage() {
                         dataKey="value"
                       >
                         {getOrderStatusData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            stroke="none"
+                          />
                         ))}
                       </Pie>
                       <Tooltip content={<CustomTooltip />} />
@@ -432,9 +487,9 @@ export default function AnalyticsDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-md bg-white">
+            <Card className="border-[#FFB38A]/20">
               <CardHeader>
-                <CardTitle className="text-slate-800">Số lượng đơn hàng</CardTitle>
+                <CardTitle className="text-[#1C1917]">Số lượng đơn hàng</CardTitle>
                 <CardDescription>Chi tiết số lượng theo từng loại</CardDescription>
               </CardHeader>
               <CardContent>
@@ -442,11 +497,14 @@ export default function AnalyticsDashboardPage() {
                   <Skeleton className="h-[300px] w-full rounded-xl" />
                 ) : getOrderStatusData().length > 0 ? (
                   <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={getOrderStatusData()} margin={{ top: 20, right: 20, left: 20, bottom: 40 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <BarChart
+                      data={getOrderStatusData()}
+                      margin={{ top: 20, right: 20, left: 20, bottom: 40 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#FFB38A" strokeOpacity={0.3} />
                       <XAxis
                         dataKey="name"
-                        stroke="#64748b"
+                        stroke="#78716C"
                         fontSize={11}
                         tickLine={false}
                         axisLine={false}
@@ -454,11 +512,14 @@ export default function AnalyticsDashboardPage() {
                         angle={-20}
                         textAnchor="end"
                       />
-                      <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip cursor={{ fill: '#f1f5f9' }} content={<CustomTooltip />} />
-                      <Bar dataKey="value" name="Số đơn" radius={[6, 6, 0, 0]} barSize={40}>
+                      <YAxis stroke="#78716C" fontSize={12} tickLine={false} axisLine={false} />
+                      <Tooltip cursor={{ fill: "#FFF0E0" }} content={<CustomTooltip />} />
+                      <Bar dataKey="value" name="Số đơn" radius={[8, 8, 0, 0]} barSize={40}>
                         {getOrderStatusData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -488,43 +549,70 @@ function StatCard({
   title: string;
   value: string | number;
   icon: any;
-  color: "orange" | "blue" | "emerald" | "amber";
+  color: "orange" | "emerald" | "amber" | "deep";
   loading?: boolean;
   description?: string;
 }) {
   const colorStyles = {
-    orange: "bg-orange-50 text-orange-600 border-orange-100",
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-    amber: "bg-amber-50 text-amber-600 border-amber-100",
+    orange: {
+      bg: "bg-gradient-to-br from-[#FFF0E0] to-[#FFB38A]/20",
+      icon: "bg-[#FF6A00] text-white",
+      accent: "#FF6A00",
+    },
+    emerald: {
+      bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/30",
+      icon: "bg-emerald-500 text-white",
+      accent: "#10b981",
+    },
+    amber: {
+      bg: "bg-gradient-to-br from-amber-50 to-amber-100/30",
+      icon: "bg-[#FFB000] text-white",
+      accent: "#FFB000",
+    },
+    deep: {
+      bg: "bg-gradient-to-br from-orange-50 to-orange-100/30",
+      icon: "bg-[#E65100] text-white",
+      accent: "#E65100",
+    },
   };
 
   if (loading) {
     return <Skeleton className="h-36 w-full rounded-2xl" />;
   }
 
+  const styles = colorStyles[color];
+
   return (
-    <Card className="border-none shadow-sm hover:shadow-md transition-all duration-200 bg-white overflow-hidden group">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500">{title}</p>
-            <h3 className="text-2xl font-bold text-slate-900 mt-2 group-hover:text-orange-600 transition-colors">
-              {value}
-            </h3>
-          </div>
-          <div className={cn("p-3 rounded-xl", colorStyles[color])}>
-            <Icon className="h-5 w-5" />
-          </div>
+    <div
+      className={cn(
+        "rounded-2xl p-6 border border-[#FFB38A]/20 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group",
+        styles.bg
+      )}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-[#78716C]">{title}</p>
+          <h3
+            className="text-2xl font-bold mt-2 transition-colors"
+            style={{ color: styles.accent }}
+          >
+            {value}
+          </h3>
         </div>
-        {description && (
-          <p className="text-xs text-slate-400 mt-3 flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-slate-300 inline-block"></span>
-            {description}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+        <div className={cn("p-3 rounded-xl shadow-sm", styles.icon)}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+      {description && (
+        <p className="text-xs text-[#78716C] mt-4 flex items-center gap-2">
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: styles.accent }}
+          />
+          {description}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -532,42 +620,53 @@ function WalletDetailItem({
   label,
   value,
   icon: Icon,
-  className,
+  colorClass,
 }: {
   label: string;
   value: string;
   icon: any;
-  className?: string;
+  colorClass?: string;
 }) {
   return (
-    <div className={cn("p-4 rounded-xl border flex items-center gap-4", className)}>
-      <div className="h-10 w-10 rounded-full bg-white/60 flex items-center justify-center shrink-0">
-        <Icon className="h-5 w-5 opacity-80" />
+    <div
+      className={cn(
+        "p-5 rounded-xl border flex items-center gap-4 transition-all duration-200 hover:shadow-sm",
+        colorClass
+      )}
+    >
+      <div className="h-12 w-12 rounded-xl bg-white/60 flex items-center justify-center shrink-0 shadow-sm">
+        <Icon className="h-5 w-5" />
       </div>
       <div>
         <p className="text-sm opacity-80">{label}</p>
-        <p className="text-lg font-bold">{value}</p>
+        <p className="text-xl font-bold">{value}</p>
       </div>
     </div>
   );
 }
 
-// Custom Tooltip for Recharts để đẹp hơn
+// Custom Tooltip for Recharts
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 border border-slate-100 shadow-lg rounded-xl text-sm">
-        <p className="font-medium text-slate-800 mb-2">{label}</p>
+      <div
+        className="p-4 border border-[#FFB38A]/20 shadow-xl rounded-xl text-sm"
+        style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FFF0E0 100%)" }}
+      >
+        <p className="font-semibold text-[#1C1917] mb-3">{label}</p>
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 text-xs mb-1">
+          <div key={index} className="flex items-center gap-2 text-xs mb-1.5">
             <div
-              className="w-2 h-2 rounded-full"
+              className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-slate-500">{entry.name}:</span>
-            <span className="font-semibold text-slate-700">
-              {typeof entry.value === 'number' && entry.value > 1000
-                ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(entry.value)
+            <span className="text-[#78716C]">{entry.name}:</span>
+            <span className="font-semibold text-[#1C1917]">
+              {typeof entry.value === "number" && entry.value > 1000
+                ? new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(entry.value)
                 : entry.value}
             </span>
           </div>
@@ -579,10 +678,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const EmptyState = () => (
-  <div className="h-full flex flex-col items-center justify-center text-slate-400">
-    <div className="bg-slate-50 p-4 rounded-full mb-3">
-      <BarChart3 className="h-8 w-8 opacity-50" />
+  <div className="h-[300px] flex flex-col items-center justify-center text-[#78716C]">
+    <div
+      className="p-5 rounded-2xl mb-4"
+      style={{ background: "linear-gradient(135deg, #FFF0E0 0%, #FFB38A20 100%)" }}
+    >
+      <BarChart3 className="h-10 w-10 text-[#FFB38A]" />
     </div>
     <p className="text-sm font-medium">Không có dữ liệu hiển thị</p>
+    <p className="text-xs text-[#A8A29E] mt-1">Thử thay đổi khoảng thời gian</p>
   </div>
 );
