@@ -100,14 +100,6 @@ export default function ProductsPage() {
     }).format(price);
   };
 
-  const parseMediaArray = (media: string): string[] => {
-    try {
-      return JSON.parse(media);
-    } catch {
-      return [];
-    }
-  };
-
   if (!shopId) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))" }}>
@@ -249,15 +241,15 @@ export default function ProductsPage() {
 
         {/* Products Grid */}
         <Card className="border-none shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
-          <CardContent className="p-8">
+          <CardContent className="p-6">
             {isLoading ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="space-y-4">
-                    <Skeleton className="h-64 w-full rounded-2xl" />
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-10 w-1/2" />
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="h-40 w-full rounded-xl" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-6 w-1/2" />
                   </div>
                 ))}
               </div>
@@ -271,137 +263,96 @@ export default function ProductsPage() {
               </Alert>
             ) : productData && productData.data.length > 0 ? (
               <>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {productData.data.map((product: Product) => {
-                    const mediaArray = parseMediaArray(product.media);
                     const imageUrl = productService.getImageUrl(product.image);
 
                     const priceRange =
                       product.min_price === product.max_price
                         ? formatPrice(product.min_price)
-                        : `${formatPrice(product.min_price)} - ${formatPrice(
-                          product.max_price
-                        )}`;
+                        : `${formatPrice(product.min_price)} - ${formatPrice(product.max_price)}`;
 
                     return (
                       <Card
                         key={product.id}
-                        className="group relative overflow-hidden border-2 border-[#FFB38A]/30 hover:border-[#FF6A00] transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-2xl bg-white"
+                        className="group relative overflow-hidden border border-[#FFB38A]/30 hover:border-[#FF6A00] transition-all duration-200 hover:shadow-lg rounded-xl bg-white"
                       >
-                        {/* Gradient overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#FF6A00]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"></div>
-
-                        <div className="relative aspect-square overflow-hidden" style={{ background: "linear-gradient(135deg, #FFF0E0 0%, #FFB38A 50%, #FF8A33 100%)" }}>
+                        {/* Image container - compact */}
+                        <div className="relative h-36 overflow-hidden bg-[#FFF0E0]">
                           <img
                             src={imageUrl}
                             alt={product.name}
-                            className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:rotate-2"
+                            loading="lazy"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
                             }}
                           />
 
                           {/* Action button */}
-                          <div className="absolute top-4 right-4 z-20">
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   size="icon"
-                                  className="h-10 w-10 rounded-full bg-white/95 hover:bg-white shadow-xl backdrop-blur-sm border-2 border-[#FFB38A]/30 transition-all duration-300 hover:scale-110"
+                                  className="h-8 w-8 rounded-lg bg-white/90 hover:bg-white shadow-md border border-[#FFB38A]/30"
                                 >
-                                  <MoreHorizontal className="h-5 w-5 text-[#FF6A00]" />
+                                  <MoreHorizontal className="h-4 w-4 text-[#FF6A00]" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-2xl border-2 border-[#FFB38A]/20">
-                                <DropdownMenuLabel className="text-base font-bold text-[#E65100] py-3">Thao tác</DropdownMenuLabel>
+                              <DropdownMenuContent align="end" className="w-44 rounded-lg shadow-xl border border-[#FFB38A]/20">
+                                <DropdownMenuLabel className="text-sm font-bold text-[#E65100]">Thao tác</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-[#FFB38A]/20" />
                                 <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/products/${product.id}`
-                                    )
-                                  }
-                                  className="rounded-lg py-3 cursor-pointer hover:bg-[#FFF0E0]"
+                                  onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                                  className="rounded cursor-pointer hover:bg-[#FFF0E0] text-sm"
                                 >
-                                  <Eye className="mr-3 h-5 w-5 text-[#FF8A33]" />
-                                  <span className="font-medium">Xem chi tiết</span>
+                                  <Eye className="mr-2 h-4 w-4 text-[#FF8A33]" />
+                                  Xem chi tiết
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/products/${product.id}/edit`
-                                    )
-                                  }
-                                  className="rounded-lg py-3 cursor-pointer hover:bg-[#FFF0E0]"
+                                  onClick={() => router.push(`/dashboard/products/${product.id}/edit`)}
+                                  className="rounded cursor-pointer hover:bg-[#FFF0E0] text-sm"
                                 >
-                                  <Edit className="mr-3 h-5 w-5 text-[#FFB000]" />
-                                  <span className="font-medium">Chỉnh sửa</span>
+                                  <Edit className="mr-2 h-4 w-4 text-[#FFB000]" />
+                                  Chỉnh sửa
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() =>
-                                    deleteProductMutation.mutate(product.id)
-                                  }
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg py-3 cursor-pointer"
+                                  onClick={() => deleteProductMutation.mutate(product.id)}
+                                  className="text-red-600 hover:bg-red-50 rounded cursor-pointer text-sm"
                                 >
-                                  <Trash2 className="mr-3 h-5 w-5" />
-                                  <span className="font-medium">Xóa</span>
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Xóa
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
                         </div>
 
-                        <CardContent className="p-5 relative z-20">
-                          <h3 className="line-clamp-2 font-bold text-lg text-[#111111] mb-2 group-hover:text-[#FF6A00] transition-colors min-h-[3.5rem]">
+                        {/* Content - compact */}
+                        <CardContent className="p-3">
+                          <h3
+                            className="line-clamp-2 font-semibold text-sm text-[#1C1917] mb-1 group-hover:text-[#FF6A00] transition-colors cursor-pointer min-h-[2.5rem]"
+                            onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                          >
                             {product.name}
                           </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-4 leading-relaxed min-h-[2.5rem]">
-                            {product.short_description}
+
+                          <p className="text-base font-bold text-[#FF6A00] mb-2">
+                            {priceRange}
                           </p>
 
-                          <div className="flex items-end justify-between mt-4">
-                            <div className="flex-1">
-                              <p className="text-2xl font-bold mb-2" style={{
-                                background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-                                WebkitBackgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                                backgroundClip: "text"
-                              }}>
-                                {priceRange}
-                              </p>
-                              {product.rating && (
-                                <div className="flex items-center gap-1.5">
-                                  <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                      <span
-                                        key={i}
-                                        className={`text-base ${i < Math.round(product.rating?.average_rating || 0) ? 'text-[#FFB000]' : 'text-gray-300'}`}
-                                      >
-                                        ★
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <span className="text-sm font-semibold text-gray-700">
-                                    {product.rating.average_rating.toFixed(1)}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    ({product.rating.total_reviews})
-                                  </span>
-                                </div>
-                              )}
+                          {product.rating && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className="text-[#FFB000]">★</span>
+                              <span className="font-medium text-gray-700">
+                                {product.rating.average_rating.toFixed(1)}
+                              </span>
+                              <span className="text-gray-400">
+                                ({product.rating.total_reviews})
+                              </span>
                             </div>
-
-                            <Button
-                              size="sm"
-                              className="h-10 px-5 rounded-xl font-bold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                              style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}
-                              onClick={() =>
-                                router.push(`/dashboard/products/${product.id}`)
-                              }
-                            >
-                              Chi tiết
-                            </Button>
-                          </div>
+                          )}
                         </CardContent>
                       </Card>
                     );
