@@ -223,20 +223,20 @@ export default function OrdersListPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Trạng thái</Label>
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+              <div className="flex-1 min-w-[200px]">
+                <Label className="mb-2 block text-sm font-medium">Trạng thái</Label>
                 <Select
-                  value={filters.status || ""}
+                  value={filters.status || "ALL"}
                   onValueChange={(value) =>
-                    handleFilterChange("status", value || undefined)
+                    handleFilterChange("status", value === "ALL" ? undefined : value)
                   }
                 >
-                  <SelectTrigger className="border-[#FFB38A] focus:ring-[#FF6A00]">
+                  <SelectTrigger className="h-10 border-[#FFB38A] focus:ring-[#FF6A00]">
                     <SelectValue placeholder="Tất cả trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tất cả</SelectItem>
+                    <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
                     {Object.entries(STATUS_CONFIG).map(([value, config]) => (
                       <SelectItem key={value} value={value}>
                         {config.label}
@@ -246,7 +246,7 @@ export default function OrdersListPage() {
                 </Select>
               </div>
 
-              <div className="flex items-end">
+              <div className="sm:self-end">
                 <Button
                   onClick={() =>
                     setFilters({
@@ -256,7 +256,7 @@ export default function OrdersListPage() {
                     })
                   }
                   variant="outline"
-                  className="w-full border-[#E65100] hover:bg-[#FFF0E0]"
+                  className="h-10 w-full sm:w-auto border-[#E65100] hover:bg-[#FFF0E0]"
                   style={{ color: "#E65100" }}
                 >
                   Xóa bộ lọc

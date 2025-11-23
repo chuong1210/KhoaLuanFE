@@ -17,18 +17,44 @@ const CATEGORY_API_BASE = "http://localhost:9001/v1/categories"
 const MEDIA_API_BASE = "http://localhost:9001/v1/media"
 
 export const productService = {
-  // Upload media file
+  // Upload single media file
   uploadMedia: async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("media", file)
     const response = await apiClient.post(MEDIA_API_BASE, formData, {
       headers: { "Content-Type": "multipart/form-data" }
     })
-    const fileName = response.data.result?.name || response.data.name
+    const result = response.data.result
+    // API returns array, get first element
+    if (Array.isArray(result) && result.length > 0) {
+      return result[0]
+    }
+    const fileName = result?.name || response.data.name
     if (!fileName) {
       throw new Error("Failed to upload media")
     }
     return fileName
+  },
+
+  // Upload multiple media files at once
+  uploadMediaBatch: async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return []
+
+    const formData = new FormData()
+    files.forEach(file => {
+      formData.append("media", file)
+    })
+
+    const response = await apiClient.post(MEDIA_API_BASE, formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    })
+
+    // API returns { result: ["filename1.jpg", "filename2.jpg", ...] }
+    const result = response.data.result
+    if (Array.isArray(result)) {
+      return result
+    }
+    throw new Error("Failed to upload media batch")
   },
 
   // Helper lấy URL ảnh
