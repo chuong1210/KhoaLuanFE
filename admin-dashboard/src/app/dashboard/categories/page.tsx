@@ -1,0 +1,553 @@
+'use client'
+
+import { useState, useRef } from 'react'
+import Image from 'next/image'
+import {
+  FolderTree,
+  Plus,
+  Pencil,
+  Trash2,
+  Upload,
+  ImageIcon,
+  ChevronRight,
+  ChevronDown,
+  X,
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  useCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useDeleteCategory,
+} from '@/features/categories/hooks/useCategories'
+import type { Category } from '@/features/categories/types'
+import { cn } from '@/lib/utils'
+
+interface CategoryItemProps {
+  category: Category
+  level: number
+  onEdit: (category: Category) => void
+  onDelete: (category: Category) => void
+  expandedIds: Set<string>
+  toggleExpand: (id: string) => void
+}
+
+function CategoryItem({
+  category,
+  level,
+  onEdit,
+  onDelete,
+  expandedIds,
+  toggleExpand,
+}: CategoryItemProps) {
+  const hasChildren = category.child && category.child.length > 0
+  const isExpanded = expandedIds.has(category.category_id)
+
+  return (
+    <div>
+      <div
+        className={cn(
+          'flex items-center justify-between p-3 rounded-lg hover:bg-orange-apricot/50 transition-colors group',
+          level > 0 && 'ml-6 border-l-2 border-orange-peach/30'
+        )}
+        style={{ marginLeft: level > 0 ? `${level * 24}px` : 0 }}
+      >
+        <div className="flex items-center gap-3">
+          {hasChildren ? (
+            <button
+              onClick={() => toggleExpand(category.category_id)}
+              className="p-1 hover:bg-orange-peach/30 rounded"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-orange-vivid" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-orange-vivid" />
+              )}
+            </button>
+          ) : (
+            <div className="w-6" />
+          )}
+
+          {category.image ? (
+            <div className="w-10 h-10 rounded-lg overflow-hidden bg-orange-apricot/50">
+              <Image
+                src={category.image}
+                alt={category.name}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-orange-apricot/50 flex items-center justify-center">
+              <ImageIcon className="h-5 w-5 text-orange-vivid" />
+            </div>
+          )}
+
+          <div>
+            <p className="font-medium text-gray-800">{category.name}</p>
+            <p className="text-xs text-gray-500">{category.path}</p>
+          </div>
+
+          {hasChildren && (
+            <Badge variant="info" className="ml-2">
+              {category.child?.length} danh mục con
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(category)}
+            className="h-8 w-8 p-0"
+          >
+            <Pencil className="h-4 w-4 text-orange-vivid" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(category)}
+            className="h-8 w-8 p-0"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      </div>
+
+      {hasChildren && isExpanded && (
+        <div className="mt-1">
+          {category.child?.map((child) => (
+            <CategoryItem
+              key={child.category_id}
+              category={child}
+              level={level + 1}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              expandedIds={expandedIds}
+              toggleExpand={toggleExpand}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function CategoriesPage() {
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+
+  // Form states
+  const [parentId, setParentId] = useState<string>('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { data: categories, isLoading } = useCategories()
+  const createMutation = useCreateCategory()
+  const updateMutation = useUpdateCategory()
+  const deleteMutation = useDeleteCategory()
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    }
+  }
+
+  const resetForm = () => {
+    setParentId('')
+    setSelectedFile(null)
+    setPreviewUrl('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleCreate = () => {
+    if (!selectedFile) return
+
+    createMutation.mutate(
+      {
+        parent: parentId || undefined,
+        media: selectedFile,
+      },
+      {
+        onSuccess: () => {
+          setCreateDialogOpen(false)
+          resetForm()
+        },
+      }
+    )
+  }
+
+  const handleEdit = (category: Category) => {
+    setSelectedCategory(category)
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdate = () => {
+    if (!selectedCategory || !selectedFile) return
+
+    updateMutation.mutate(
+      {
+        cate_id: selectedCategory.category_id,
+        media: selectedFile,
+      },
+      {
+        onSuccess: () => {
+          setEditDialogOpen(false)
+          setSelectedCategory(null)
+          resetForm()
+        },
+      }
+    )
+  }
+
+  const handleDeleteClick = (category: Category) => {
+    setSelectedCategory(category)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = () => {
+    if (!selectedCategory) return
+
+    deleteMutation.mutate(selectedCategory.category_id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false)
+        setSelectedCategory(null)
+      },
+    })
+  }
+
+  // Flatten categories for parent selection
+  const flattenCategories = (cats: Category[], result: Category[] = []): Category[] => {
+    cats.forEach((cat) => {
+      result.push(cat)
+      if (cat.child) {
+        flattenCategories(cat.child, result)
+      }
+    })
+    return result
+  }
+
+  const allCategories = categories ? flattenCategories(categories) : []
+
+  return (
+    <div className="space-y-6 animate-in">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <FolderTree className="h-7 w-7 text-orange-vivid" />
+            Quản lý Danh mục
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Quản lý các danh mục sản phẩm trên sàn
+          </p>
+        </div>
+        <Button
+          onClick={() => setCreateDialogOpen(true)}
+          className="bg-gradient-sunrise hover:opacity-90"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Thêm danh mục
+        </Button>
+      </div>
+
+      {/* Categories List */}
+      <Card className="table-container">
+        <CardHeader className="border-b border-orange-peach/20">
+          <CardTitle className="flex items-center gap-2">
+            <FolderTree className="h-5 w-5 text-orange-vivid" />
+            Danh sách Danh mục
+            {categories && (
+              <Badge variant="processing" className="ml-2">
+                {allCategories.length} danh mục
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : categories && categories.length > 0 ? (
+            <div className="space-y-2">
+              {categories.map((category) => (
+                <CategoryItem
+                  key={category.category_id}
+                  category={category}
+                  level={0}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteClick}
+                  expandedIds={expandedIds}
+                  toggleExpand={toggleExpand}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <FolderTree className="h-16 w-16 mx-auto mb-4 text-orange-peach" />
+              <p className="text-gray-500 text-lg">Chưa có danh mục nào</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Nhấn "Thêm danh mục" để tạo danh mục đầu tiên
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-orange-vivid" />
+              Thêm danh mục mới
+            </DialogTitle>
+            <DialogDescription>
+              Tạo danh mục mới cho sản phẩm. Chọn ảnh và danh mục cha (nếu có).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
+              <Select value={parentId} onValueChange={setParentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn danh mục cha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
+                  {allCategories.map((cat) => (
+                    <SelectItem key={cat.category_id} value={cat.category_id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="media">Ảnh danh mục *</Label>
+              <div className="flex flex-col gap-3">
+                <Input
+                  id="media"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                  className="cursor-pointer"
+                />
+                {previewUrl && (
+                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
+                    <Image
+                      src={previewUrl}
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                    />
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null)
+                        setPreviewUrl('')
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = ''
+                        }
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false)
+                resetForm()
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={!selectedFile || createMutation.isPending}
+              className="bg-gradient-sunrise hover:opacity-90"
+            >
+              {createMutation.isPending ? 'Đang tạo...' : 'Tạo danh mục'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-orange-vivid" />
+              Cập nhật danh mục
+            </DialogTitle>
+            <DialogDescription>
+              Cập nhật ảnh cho danh mục "{selectedCategory?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {selectedCategory?.image && (
+              <div className="grid gap-2">
+                <Label>Ảnh hiện tại</Label>
+                <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
+                  <Image
+                    src={selectedCategory.image}
+                    alt={selectedCategory.name}
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-media">Ảnh mới *</Label>
+              <div className="flex flex-col gap-3">
+                <Input
+                  id="edit-media"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                  className="cursor-pointer"
+                />
+                {previewUrl && (
+                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
+                    <Image
+                      src={previewUrl}
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                    />
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null)
+                        setPreviewUrl('')
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = ''
+                        }
+                      }}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDialogOpen(false)
+                setSelectedCategory(null)
+                resetForm()
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={!selectedFile || updateMutation.isPending}
+              className="bg-gradient-sunrise hover:opacity-90"
+            >
+              {updateMutation.isPending ? 'Đang cập nhật...' : 'Cập nhật'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa danh mục</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa danh mục "{selectedCategory?.name}"?
+              {selectedCategory?.child && selectedCategory.child.length > 0 && (
+                <span className="block mt-2 text-red-500 font-medium">
+                  Lưu ý: Danh mục này có {selectedCategory.child.length} danh mục con.
+                  Việc xóa có thể ảnh hưởng đến các danh mục con.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Đang xóa...' : 'Xóa'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}

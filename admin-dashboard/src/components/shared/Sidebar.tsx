@@ -14,6 +14,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  FolderTree,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppDispatch, useSidebarCollapsed } from '@/store'
@@ -31,6 +32,11 @@ const menuItems = [
     title: 'Sản phẩm',
     icon: Package,
     href: '/dashboard/products',
+  },
+  {
+    title: 'Danh mục',
+    icon: FolderTree,
+    href: '/dashboard/categories',
   },
   {
     title: 'Đơn hàng',
