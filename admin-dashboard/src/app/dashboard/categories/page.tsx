@@ -384,7 +384,7 @@ export default function CategoriesPage() {
               <FolderTree className="h-16 w-16 mx-auto mb-4 text-orange-peach" />
               <p className="text-gray-500 text-lg">Chưa có danh mục nào</p>
               <p className="text-gray-400 text-sm mt-1">
-                Nhấn "Thêm danh mục" để tạo danh mục đầu tiên
+                Nhấn Thêm danh mục để tạo danh mục đầu tiên
               </p>
             </div>
           )}
@@ -502,7 +502,7 @@ export default function CategoriesPage() {
               Cập nhật danh mục
             </DialogTitle>
             <DialogDescription>
-              Cập nhật thông tin cho danh mục "{selectedCategory?.name}"
+              Cập nhật thông tin cho danh mục {selectedCategory?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -617,7 +617,7 @@ export default function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa danh mục</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa danh mục "{selectedCategory?.name}"?
+              Bạn có chắc chắn muốn xóa danh mục {selectedCategory?.name}?
               {selectedCategory?.child?.valid &&
                 selectedCategory.child.data &&
                 selectedCategory.child.data.length > 0 && (
