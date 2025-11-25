@@ -1,6 +1,7 @@
-'use client'
+"use client";
 
-import { useState, useRef } from 'react'
+import { useState, useRef } from "react";
+import Image from "next/image";
 import {
   FolderTree,
   Plus,
@@ -11,13 +12,13 @@ import {
   ChevronRight,
   ChevronDown,
   X,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -25,14 +26,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,23 +43,36 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 import {
   useCategories,
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
-} from '@/features/categories/hooks/useCategories'
-import type { Category } from '@/features/categories/types'
-import { cn } from '@/lib/utils'
+} from "@/features/categories/hooks/useCategories";
+import type { Category } from "@/features/categories/types";
+import { cn } from "@/lib/utils";
+
+// Helper function to format image URL
+const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null;
+
+  // If image path starts with http:// or https://, use it directly
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+
+  // Otherwise, use media API endpoint
+  return `http://localhost:9001/v1/media/${imagePath}`;
+};
 
 interface CategoryItemProps {
-  category: Category
-  level: number
-  onEdit: (category: Category) => void
-  onDelete: (category: Category) => void
-  expandedIds: Set<string>
-  toggleExpand: (id: string) => void
+  category: Category;
+  level: number;
+  onEdit: (category: Category) => void;
+  onDelete: (category: Category) => void;
+  expandedIds: Set<string>;
+  toggleExpand: (id: string) => void;
 }
 
 function CategoryItem({
@@ -69,16 +83,21 @@ function CategoryItem({
   expandedIds,
   toggleExpand,
 }: CategoryItemProps) {
-  const hasChildren = category.child?.valid && category.child.data && category.child.data.length > 0
-  const isExpanded = expandedIds.has(category.category_id)
-  const imageUrl = category.image?.valid && category.image.data ? category.image.data : null
+  const hasChildren =
+    category.child?.valid &&
+    category.child.data &&
+    category.child.data.length > 0;
+  const isExpanded = expandedIds.has(category.category_id);
+  const imagePath =
+    category.image?.valid && category.image.data ? category.image.data : null;
+  const imageUrl = getImageUrl(imagePath);
 
   return (
     <div>
       <div
         className={cn(
-          'flex items-center justify-between p-3 rounded-lg hover:bg-orange-apricot/50 transition-colors group',
-          level > 0 && 'ml-6 border-l-2 border-orange-peach/30'
+          "flex items-center justify-between p-3 rounded-lg hover:bg-orange-apricot/50 transition-colors group",
+          level > 0 && "ml-6 border-l-2 border-orange-peach/30"
         )}
         style={{ marginLeft: level > 0 ? `${level * 24}px` : 0 }}
       >
@@ -100,14 +119,11 @@ function CategoryItem({
 
           {imageUrl ? (
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-orange-apricot/50">
-<<<<<<< HEAD
-              <img
-                src={category.image}
-=======
               <Image
                 src={imageUrl}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
                 alt={category.name}
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -165,71 +181,73 @@ function CategoryItem({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export default function CategoriesPage() {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Form states
-  const [categoryName, setCategoryName] = useState<string>('')
-  const [parentId, setParentId] = useState<string>('')
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [categoryName, setCategoryName] = useState<string>("");
+  const [parentId, setParentId] = useState<string>("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: categories, isLoading } = useCategories()
-  const createMutation = useCreateCategory()
-  const updateMutation = useUpdateCategory()
-  const deleteMutation = useDeleteCategory()
+  const { data: categories, isLoading } = useCategories();
+  const createMutation = useCreateCategory();
+  const updateMutation = useUpdateCategory();
+  const deleteMutation = useDeleteCategory();
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
-      const newSet = new Set(prev)
+      const newSet = new Set(prev);
       if (newSet.has(id)) {
-        newSet.delete(id)
+        newSet.delete(id);
       } else {
-        newSet.add(id)
+        newSet.add(id);
       }
-      return newSet
-    })
-  }
+      return newSet;
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+    const files = e.target.files;
     if (files && files.length > 0) {
-      const fileArray = Array.from(files)
-      setSelectedFiles(fileArray)
-      const urls = fileArray.map((file) => URL.createObjectURL(file))
-      setPreviewUrls(urls)
+      const fileArray = Array.from(files);
+      setSelectedFiles(fileArray);
+      const urls = fileArray.map((file) => URL.createObjectURL(file));
+      setPreviewUrls(urls);
     }
-  }
+  };
 
   const removeFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
     setPreviewUrls((prev) => {
-      URL.revokeObjectURL(prev[index])
-      return prev.filter((_, i) => i !== index)
-    })
-  }
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   const resetForm = () => {
-    setCategoryName('')
-    setParentId('')
-    setSelectedFiles([])
-    previewUrls.forEach((url) => URL.revokeObjectURL(url))
-    setPreviewUrls([])
+    setCategoryName("");
+    setParentId("");
+    setSelectedFiles([]);
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    setPreviewUrls([]);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+      fileInputRef.current.value = "";
     }
-  }
+  };
 
   const handleCreate = () => {
-    if (!categoryName.trim() || selectedFiles.length === 0) return
+    if (!categoryName.trim() || selectedFiles.length === 0) return;
 
     createMutation.mutate(
       {
@@ -239,22 +257,22 @@ export default function CategoriesPage() {
       },
       {
         onSuccess: () => {
-          setCreateDialogOpen(false)
-          resetForm()
+          setCreateDialogOpen(false);
+          resetForm();
         },
       }
-    )
-  }
+    );
+  };
 
   const handleEdit = (category: Category) => {
-    setSelectedCategory(category)
-    setCategoryName(category.name)
-    setParentId(category.parent || '')
-    setEditDialogOpen(true)
-  }
+    setSelectedCategory(category);
+    setCategoryName(category.name);
+    setParentId(category.parent || "");
+    setEditDialogOpen(true);
+  };
 
   const handleUpdate = () => {
-    if (!selectedCategory || !categoryName.trim()) return
+    if (!selectedCategory || !categoryName.trim()) return;
 
     updateMutation.mutate(
       {
@@ -265,42 +283,45 @@ export default function CategoriesPage() {
       },
       {
         onSuccess: () => {
-          setEditDialogOpen(false)
-          setSelectedCategory(null)
-          resetForm()
+          setEditDialogOpen(false);
+          setSelectedCategory(null);
+          resetForm();
         },
       }
-    )
-  }
+    );
+  };
 
   const handleDeleteClick = (category: Category) => {
-    setSelectedCategory(category)
-    setDeleteDialogOpen(true)
-  }
+    setSelectedCategory(category);
+    setDeleteDialogOpen(true);
+  };
 
   const handleDelete = () => {
-    if (!selectedCategory) return
+    if (!selectedCategory) return;
 
     deleteMutation.mutate(selectedCategory.category_id, {
       onSuccess: () => {
-        setDeleteDialogOpen(false)
-        setSelectedCategory(null)
+        setDeleteDialogOpen(false);
+        setSelectedCategory(null);
       },
-    })
-  }
+    });
+  };
 
   // Flatten categories for parent selection
-  const flattenCategories = (cats: Category[], result: Category[] = []): Category[] => {
+  const flattenCategories = (
+    cats: Category[],
+    result: Category[] = []
+  ): Category[] => {
     cats.forEach((cat) => {
-      result.push(cat)
+      result.push(cat);
       if (cat.child?.valid && cat.child.data) {
-        flattenCategories(cat.child.data, result)
+        flattenCategories(cat.child.data, result);
       }
-    })
-    return result
-  }
+    });
+    return result;
+  };
 
-  const allCategories = categories ? flattenCategories(categories) : []
+  const allCategories = categories ? flattenCategories(categories) : [];
 
   return (
     <div className="space-y-6 animate-in">
@@ -379,7 +400,8 @@ export default function CategoriesPage() {
               Thêm danh mục mới
             </DialogTitle>
             <DialogDescription>
-              Tạo danh mục mới cho sản phẩm. Nhập tên, chọn ảnh và danh mục cha (nếu có).
+              Tạo danh mục mới cho sản phẩm. Nhập tên, chọn ảnh và danh mục cha
+              (nếu có).
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -394,12 +416,12 @@ export default function CategoriesPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
-              <Select value={parentId} onValueChange={(val) => setParentId(val === 'none' ? '' : val)}>
+              <Select value={parentId} onValueChange={setParentId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Không có (danh mục gốc)</SelectItem>
+                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
                   {allCategories.map((cat) => (
                     <SelectItem key={cat.category_id} value={cat.category_id}>
                       {cat.name}
@@ -420,27 +442,6 @@ export default function CategoriesPage() {
                   ref={fileInputRef}
                   className="cursor-pointer"
                 />
-<<<<<<< HEAD
-                {previewUrl && (
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null)
-                        setPreviewUrl('')
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = ''
-                        }
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-=======
                 {previewUrls.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {previewUrls.map((url, index) => (
@@ -462,7 +463,6 @@ export default function CategoriesPage() {
                         </button>
                       </div>
                     ))}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
                   </div>
                 )}
               </div>
@@ -472,18 +472,22 @@ export default function CategoriesPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setCreateDialogOpen(false)
-                resetForm()
+                setCreateDialogOpen(false);
+                resetForm();
               }}
             >
               Hủy
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!categoryName.trim() || selectedFiles.length === 0 || createMutation.isPending}
+              disabled={
+                !categoryName.trim() ||
+                selectedFiles.length === 0 ||
+                createMutation.isPending
+              }
               className="bg-gradient-sunrise hover:opacity-90"
             >
-              {createMutation.isPending ? 'Đang tạo...' : 'Tạo danh mục'}
+              {createMutation.isPending ? "Đang tạo..." : "Tạo danh mục"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -520,7 +524,9 @@ export default function CategoriesPage() {
                 <SelectContent>
                   <SelectItem value="">Không có (danh mục gốc)</SelectItem>
                   {allCategories
-                    .filter((cat) => cat.category_id !== selectedCategory?.category_id)
+                    .filter(
+                      (cat) => cat.category_id !== selectedCategory?.category_id
+                    )
                     .map((cat) => (
                       <SelectItem key={cat.category_id} value={cat.category_id}>
                         {cat.name}
@@ -529,23 +535,22 @@ export default function CategoriesPage() {
                 </SelectContent>
               </Select>
             </div>
-            {selectedCategory?.image?.valid && selectedCategory.image.data && (
-              <div className="grid gap-2">
-                <Label>Ảnh hiện tại</Label>
-                <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-<<<<<<< HEAD
-                  <img
-                    src={selectedCategory.image}
-=======
-                  <Image
-                    src={selectedCategory.image.data}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
-                    alt={selectedCategory.name}
-                    className="w-full h-full object-cover"
-                  />
+            {selectedCategory?.image?.valid &&
+              selectedCategory.image.data &&
+              getImageUrl(selectedCategory.image.data) && (
+                <div className="grid gap-2">
+                  <Label>Ảnh hiện tại</Label>
+                  <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
+                    <Image
+                      src={getImageUrl(selectedCategory.image.data)!}
+                      alt={selectedCategory.name}
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             <div className="grid gap-2">
               <Label htmlFor="edit-media">Ảnh mới (tùy chọn)</Label>
               <div className="flex flex-col gap-3">
@@ -558,27 +563,6 @@ export default function CategoriesPage() {
                   ref={fileInputRef}
                   className="cursor-pointer"
                 />
-<<<<<<< HEAD
-                {previewUrl && (
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null)
-                        setPreviewUrl('')
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = ''
-                        }
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-=======
                 {previewUrls.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {previewUrls.map((url, index) => (
@@ -600,7 +584,6 @@ export default function CategoriesPage() {
                         </button>
                       </div>
                     ))}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
                   </div>
                 )}
               </div>
@@ -610,9 +593,9 @@ export default function CategoriesPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setEditDialogOpen(false)
-                setSelectedCategory(null)
-                resetForm()
+                setEditDialogOpen(false);
+                setSelectedCategory(null);
+                resetForm();
               }}
             >
               Hủy
@@ -622,7 +605,7 @@ export default function CategoriesPage() {
               disabled={!categoryName.trim() || updateMutation.isPending}
               className="bg-gradient-sunrise hover:opacity-90"
             >
-              {updateMutation.isPending ? 'Đang cập nhật...' : 'Cập nhật'}
+              {updateMutation.isPending ? "Đang cập nhật..." : "Cập nhật"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -635,12 +618,15 @@ export default function CategoriesPage() {
             <AlertDialogTitle>Xác nhận xóa danh mục</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn có chắc chắn muốn xóa danh mục "{selectedCategory?.name}"?
-              {selectedCategory?.child?.valid && selectedCategory.child.data && selectedCategory.child.data.length > 0 && (
-                <span className="block mt-2 text-red-500 font-medium">
-                  Lưu ý: Danh mục này có {selectedCategory.child.data.length} danh mục con.
-                  Việc xóa có thể ảnh hưởng đến các danh mục con.
-                </span>
-              )}
+              {selectedCategory?.child?.valid &&
+                selectedCategory.child.data &&
+                selectedCategory.child.data.length > 0 && (
+                  <span className="block mt-2 text-red-500 font-medium">
+                    Lưu ý: Danh mục này có {selectedCategory.child.data.length}{" "}
+                    danh mục con. Việc xóa có thể ảnh hưởng đến các danh mục
+                    con.
+                  </span>
+                )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -650,11 +636,11 @@ export default function CategoriesPage() {
               className="bg-red-500 hover:bg-red-600"
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Đang xóa...' : 'Xóa'}
+              {deleteMutation.isPending ? "Đang xóa..." : "Xóa"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
