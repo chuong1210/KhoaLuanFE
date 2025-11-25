@@ -1,468 +1,802 @@
 "use client";
 
 import { useState } from "react";
-import * as XLSX from "xlsx";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product-service";
 import { useAppSelector } from "@/store/hooks";
 import {
-    Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+  Upload,
+  FileSpreadsheet,
+  Download,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Loader2,
+  Image as ImageIcon,
+  FileText,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Loader2, Upload, FileSpreadsheet, Check, X, Info, ImageUp, AlertCircle } from "lucide-react";
+import * as XLSX from "xlsx";
 import type { CreateProductPayload } from "@/types/product";
-import { Badge } from "@/components/ui/badge";
-import { downloadProductImportTemplate } from "@/lib/utils/excel-template-generator";
 
-// Định nghĩa cấu trúc cột trong file Excel
-interface ExcelRow {
-    "Tên sản phẩm": string;
-    "Mô tả ngắn": string;
-    "Mô tả chi tiết": string;
-    "Danh mục ID": string;
-    "Ảnh đại diện (URL/Path)": string;
-    "Ảnh phụ (URL/Path, cách nhau bởi dấu phẩy)": string;
-    "SKU Code": string;
-    "Giá": number;
-    "Kho": number;
-    "Cân nặng": number;
-    "Phân loại 1: Tên": string;
-    "Phân loại 1: Giá trị": string;
-    "Phân loại 2: Tên": string;
-    "Phân loại 2: Giá trị": string;
+interface ImportRow {
+  rowNumber: number;
+  name: string;
+  description: string;
+  short_description: string;
+  category_id: string;
+  image_path: string; // Đường dẫn ảnh chính
+  media_paths: string; // Các đường dẫn ảnh phụ, ngăn cách bởi dấu ";"
+  option_group_1_name: string; // VD: Màu sắc
+  option_group_1_values: string; // VD: Đỏ;Xanh;Vàng
+  option_group_1_images: string; // Đường dẫn ảnh cho từng giá trị, ngăn cách bởi ";"
+  option_group_2_name: string; // VD: Size
+  option_group_2_values: string; // VD: S;M;L;XL
+  sku_price: string; // Giá cho tất cả SKU (nếu đồng giá) hoặc để trống
+  sku_quantity: string; // Kho cho tất cả SKU
+  sku_weight: string; // Cân nặng
+  allow_return: string; // "Có" hoặc "Không"
+  allow_check: string; // "Có" hoặc "Không"
 }
 
-// Map dữ liệu từ Excel Row sang payload với tên ảnh đã upload
-const mapRowToPayload = (
-    row: ExcelRow,
-    shopId: string,
-    uploadedImageName: string,
-    uploadedMediaNames: string[]
-): CreateProductPayload => {
-    const optionValues = [];
-    if (row["Phân loại 1: Tên"] && row["Phân loại 1: Giá trị"]) {
-        optionValues.push({ option_name: row["Phân loại 1: Tên"], value: row["Phân loại 1: Giá trị"] });
-    }
-    if (row["Phân loại 2: Tên"] && row["Phân loại 2: Giá trị"]) {
-        optionValues.push({ option_name: row["Phân loại 2: Tên"], value: row["Phân loại 2: Giá trị"] });
-    }
-
-    return {
-        name: row["Tên sản phẩm"],
-        key: row["Tên sản phẩm"].toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-"),
-        description: row["Mô tả chi tiết"],
-        short_description: row["Mô tả ngắn"],
-        category_id: row["Danh mục ID"],
-        shop_id: shopId,
-        product_is_permission_return: true,
-        product_is_permission_check: true,
-        // Tên ảnh đã được upload lên server media
-        image: uploadedImageName,
-        media: uploadedMediaNames,
-        product_sku: [
-            {
-                sku_code: row["SKU Code"] || `SKU-${Date.now()}`,
-                price: Number(row["Giá"]) || 0,
-                quantity: Number(row["Kho"]) || 0,
-                weight: Number(row["Cân nặng"]) || 0,
-                option_value: optionValues,
-            },
-        ],
-        option_value: optionValues,
-    };
-};
-
-// Extract filename from local path (c:\admin\anh.png -> anh.png)
-const extractFileName = (path: string): string => {
-    if (!path) return "";
-    // Handle both Windows and Unix paths
-    return path.split(/[\\/]/).pop() || path;
-};
+interface ImportResult {
+  row: number;
+  status: "success" | "error" | "warning";
+  message: string;
+  productName?: string;
+}
 
 export function ImportProductDialog() {
-    const queryClient = useQueryClient();
-    const shopId = useAppSelector((state) => state.shop.data?.id);
+  const queryClient = useQueryClient();
+  const shopId = useAppSelector((state) => state.shop.data?.id);
 
-    const [isOpen, setIsOpen] = useState(false);
-    const [excelData, setExcelData] = useState<ExcelRow[]>([]);
-    // State để lưu các file ảnh người dùng tải lên, key là tên file gốc
-    const [imageFilesMap, setImageFilesMap] = useState<Record<string, File>>({});
+  const [open, setOpen] = useState(false);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [imageFolder, setImageFolder] = useState<FileList | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [results, setResults] = useState<ImportResult[]>([]);
 
-    const [isUploading, setIsUploading] = useState(false);
-    const [importingIndex, setImportingIndex] = useState<number | null>(null);
-    const [importStatus, setImportStatus] = useState<Record<number, "success" | "error" | "pending">>({});
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => productService.getCategories(),
+  });
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  // Download template Excel
+  const downloadTemplate = () => {
+    const template = [
+      {
+        "Tên sản phẩm *": "Áo thun nam cotton",
+        "Mô tả ngắn": "Áo thun chất liệu cotton cao cấp",
+        "Mô tả chi tiết *":
+          "Áo thun nam chất liệu cotton 100%, thoáng mát, form regular fit",
+        "ID Danh mục *": "476e7180-fbde-407a-a618-0f0911d76416",
+        "Đường dẫn ảnh bìa *": "C:\\Users\\Admin\\Pictures\\ao-thun-1.jpg",
+        "Đường dẫn ảnh phụ":
+          "C:\\Users\\Admin\\Pictures\\ao-thun-2.jpg;C:\\Users\\Admin\\Pictures\\ao-thun-3.jpg",
+        "Nhóm phân loại 1 - Tên": "Màu sắc",
+        "Nhóm phân loại 1 - Giá trị": "Đỏ;Xanh;Vàng",
+        "Nhóm phân loại 1 - Ảnh":
+          "C:\\Users\\Admin\\Pictures\\mau-do.jpg;C:\\Users\\Admin\\Pictures\\mau-xanh.jpg;C:\\Users\\Admin\\Pictures\\mau-vang.jpg",
+        "Nhóm phân loại 2 - Tên": "Size",
+        "Nhóm phân loại 2 - Giá trị": "S;M;L;XL",
+        "Giá bán (VNĐ) *": "150000",
+        "Số lượng kho *": "100",
+        "Cân nặng (kg) *": "0.25",
+        "Cho phép đổi trả": "Có",
+        "Cho phép kiểm tra": "Có",
+      },
+    ];
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const bstr = event.target?.result;
-            const wb = XLSX.read(bstr, { type: "binary" });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json<ExcelRow>(ws);
-            setExcelData(data);
-            // Initialize status
-            const initialStatus: Record<number, "pending"> = {};
-            data.forEach((_, i) => { initialStatus[i] = "pending"; });
-            setImportStatus(initialStatus);
-            toast.info(`Đã đọc ${data.length} sản phẩm từ file Excel. Vui lòng tải lên các file ảnh.`);
+    const ws = XLSX.utils.json_to_sheet(template);
+
+    // Set column widths
+    ws["!cols"] = [
+      { wch: 25 }, // Tên sản phẩm
+      { wch: 30 }, // Mô tả ngắn
+      { wch: 50 }, // Mô tả chi tiết
+      { wch: 38 }, // ID Danh mục
+      { wch: 45 }, // Đường dẫn ảnh bìa
+      { wch: 60 }, // Đường dẫn ảnh phụ
+      { wch: 20 }, // Nhóm 1 - Tên
+      { wch: 30 }, // Nhóm 1 - Giá trị
+      { wch: 60 }, // Nhóm 1 - Ảnh
+      { wch: 20 }, // Nhóm 2 - Tên
+      { wch: 30 }, // Nhóm 2 - Giá trị
+      { wch: 15 }, // Giá bán
+      { wch: 15 }, // Số lượng
+      { wch: 15 }, // Cân nặng
+      { wch: 18 }, // Đổi trả
+      { wch: 18 }, // Kiểm tra
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+
+    // Create instructions sheet
+    const instructions = [
+      { "Hướng dẫn": "Điền thông tin sản phẩm vào file Excel theo template" },
+      { "Hướng dẫn": "(*) Các cột có dấu * là bắt buộc" },
+      { "Hướng dẫn": "" },
+      { "Hướng dẫn": "CHI TIẾT CÁC CỘT:" },
+      { "Hướng dẫn": "1. Tên sản phẩm: Tên đầy đủ của sản phẩm" },
+      { "Hướng dẫn": "2. Mô tả ngắn: Mô tả tóm tắt (tùy chọn)" },
+      { "Hướng dẫn": "3. Mô tả chi tiết: Mô tả đầy đủ về sản phẩm" },
+      {
+        "Hướng dẫn": "4. ID Danh mục: Lấy từ danh sách danh mục trong hệ thống",
+      },
+      { "Hướng dẫn": "" },
+      { "Hướng dẫn": "HÌNH ẢNH:" },
+      {
+        "Hướng dẫn":
+          "5. Đường dẫn ảnh bìa: Đường dẫn đầy đủ đến file ảnh chính",
+      },
+      { "Hướng dẫn": "   VD: C:\\Users\\Admin\\Pictures\\product.jpg" },
+      {
+        "Hướng dẫn":
+          "6. Đường dẫn ảnh phụ: Nhiều đường dẫn ngăn cách bởi dấu ;",
+      },
+      { "Hướng dẫn": "   VD: C:\\path\\img1.jpg;C:\\path\\img2.jpg" },
+      { "Hướng dẫn": "" },
+      { "Hướng dẫn": "PHÂN LOẠI HÀNG:" },
+      { "Hướng dẫn": "7. Nhóm phân loại 1 - Tên: VD: Màu sắc" },
+      {
+        "Hướng dẫn":
+          "8. Nhóm phân loại 1 - Giá trị: VD: Đỏ;Xanh;Vàng (ngăn cách bởi ;)",
+      },
+      {
+        "Hướng dẫn":
+          "9. Nhóm phân loại 1 - Ảnh: Đường dẫn ảnh tương ứng với từng giá trị",
+      },
+      {
+        "Hướng dẫn":
+          "10. Nhóm phân loại 2: Tương tự nhóm 1 (VD: Size: S;M;L;XL)",
+      },
+      { "Hướng dẫn": "" },
+      { "Hướng dẫn": "GIÁ & KHO:" },
+      { "Hướng dẫn": "11. Giá bán: Giá chung cho tất cả biến thể (số nguyên)" },
+      { "Hướng dẫn": "12. Số lượng kho: Kho chung cho tất cả biến thể" },
+      { "Hướng dẫn": "13. Cân nặng: Khối lượng sản phẩm (kg)" },
+      { "Hướng dẫn": "" },
+      { "Hướng dẫn": "CÀI ĐẶT:" },
+      { "Hướng dẫn": "14. Cho phép đổi trả: Có hoặc Không" },
+      { "Hướng dẫn": "15. Cho phép kiểm tra: Có hoặc Không" },
+      { "Hướng dẫn": "" },
+      { "Hướng dẫn": "LƯU Ý QUAN TRỌNG:" },
+      { "Hướng dẫn": "- Tất cả ảnh phải được chuẩn bị trong 1 thư mục" },
+      { "Hướng dẫn": "- Khi import, bạn sẽ chọn thư mục chứa ảnh" },
+      { "Hướng dẫn": "- Hệ thống sẽ tự động tìm và upload ảnh theo tên file" },
+      { "Hướng dẫn": "- Định dạng ảnh: JPG, PNG, WEBP (dưới 5MB)" },
+      {
+        "Hướng dẫn":
+          "- Nếu có 2 nhóm phân loại, hệ thống tự động tạo tổ hợp SKU",
+      },
+    ];
+
+    const wsInstructions = XLSX.utils.json_to_sheet(instructions);
+    wsInstructions["!cols"] = [{ wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, wsInstructions, "Hướng dẫn");
+
+    // Create categories reference sheet
+    const categoriesData = categories.map((cat) => ({
+      "ID Danh mục": cat.category_id,
+      "Tên danh mục": cat.name,
+      "Đường dẫn": cat.path,
+    }));
+
+    const wsCategories = XLSX.utils.json_to_sheet(categoriesData);
+    wsCategories["!cols"] = [{ wch: 38 }, { wch: 30 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, wsCategories, "Danh mục");
+
+    XLSX.writeFile(wb, "Template_Import_San_Pham.xlsx");
+    toast.success("Đã tải xuống file template", {
+      description: "Vui lòng điền thông tin theo hướng dẫn",
+    });
+  };
+
+  // Parse Excel file
+  const parseExcelFile = async (file: File): Promise<ImportRow[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          // Skip header row
+          const rows = jsonData.slice(1) as any[][];
+
+          const parsedRows: ImportRow[] = rows
+            .filter((row) => row.length > 0 && row[0]) // Skip empty rows
+            .map((row, index) => ({
+              rowNumber: index + 2, // +2 vì bỏ header và index bắt đầu từ 0
+              name: row[0]?.toString().trim() || "",
+              short_description: row[1]?.toString().trim() || "",
+              description: row[2]?.toString().trim() || "",
+              category_id: row[3]?.toString().trim() || "",
+              image_path: row[4]?.toString().trim() || "",
+              media_paths: row[5]?.toString().trim() || "",
+              option_group_1_name: row[6]?.toString().trim() || "",
+              option_group_1_values: row[7]?.toString().trim() || "",
+              option_group_1_images: row[8]?.toString().trim() || "",
+              option_group_2_name: row[9]?.toString().trim() || "",
+              option_group_2_values: row[10]?.toString().trim() || "",
+              sku_price: row[11]?.toString().trim() || "",
+              sku_quantity: row[12]?.toString().trim() || "",
+              sku_weight: row[13]?.toString().trim() || "",
+              allow_return: row[14]?.toString().trim() || "Có",
+              allow_check: row[15]?.toString().trim() || "Có",
+            }));
+
+          resolve(parsedRows);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Lỗi đọc file Excel"));
+      reader.readAsBinaryString(file);
+    });
+  };
+
+  // Find image file from folder by path
+  const findImageFile = (imagePath: string, folder: FileList): File | null => {
+    if (!imagePath || !folder) return null;
+
+    // Extract filename from full path (handle both Windows and Unix paths)
+    const fileName = imagePath.split(/[\\/]/).pop()?.toLowerCase();
+    if (!fileName) return null;
+
+    // Search in folder
+    for (let i = 0; i < folder.length; i++) {
+      const file = folder[i];
+      if (file.name.toLowerCase() === fileName) {
+        return file;
+      }
+    }
+
+    return null;
+  };
+
+  // Process single product import
+  const importSingleProduct = async (
+    row: ImportRow,
+    folder: FileList
+  ): Promise<ImportResult> => {
+    try {
+      // Validate required fields
+      if (!row.name) {
+        return {
+          row: row.rowNumber,
+          status: "error",
+          message: "Thiếu tên sản phẩm",
         };
-        reader.readAsBinaryString(file);
-    };
+      }
 
-    // Xử lý khi người dùng chọn các file ảnh
-    const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        const newFileMap: Record<string, File> = {};
-        files.forEach(file => {
-            // Key là tên file gốc (VD: "anh.png")
-            newFileMap[file.name] = file;
-        });
-        setImageFilesMap(prev => ({ ...prev, ...newFileMap }));
-        toast.success(`Đã tải lên ${files.length} file ảnh.`);
-    };
+      if (!row.description) {
+        return {
+          row: row.rowNumber,
+          status: "error",
+          message: "Thiếu mô tả chi tiết",
+        };
+      }
 
-    const handleImport = async () => {
-        if (!shopId) {
-            toast.error("Không tìm thấy Shop ID");
-            return;
+      if (!row.category_id) {
+        return {
+          row: row.rowNumber,
+          status: "error",
+          message: "Thiếu ID danh mục",
+        };
+      }
+
+      if (!row.image_path) {
+        return {
+          row: row.rowNumber,
+          status: "error",
+          message: "Thiếu đường dẫn ảnh bìa",
+        };
+      }
+
+      // Find main image
+      const imageFile = findImageFile(row.image_path, folder);
+      if (!imageFile) {
+        return {
+          row: row.rowNumber,
+          status: "error",
+          message: `Không tìm thấy ảnh bìa: ${row.image_path
+            .split(/[\\/]/)
+            .pop()}`,
+        };
+      }
+
+      // Find media images
+      const mediaFiles: File[] = [];
+      if (row.media_paths) {
+        const mediaPaths = row.media_paths.split(";").map((p) => p.trim());
+        for (const path of mediaPaths) {
+          const file = findImageFile(path, folder);
+          if (file) {
+            mediaFiles.push(file);
+          } else {
+            console.warn(
+              `Không tìm thấy ảnh phụ: ${path.split(/[\\/]/).pop()}`
+            );
+          }
         }
+      }
 
-        setIsUploading(true);
-        let successCount = 0;
-        let errorCount = 0;
+      // Process option groups
+      const optionGroups: Array<{
+        name: string;
+        values: string[];
+        images: File[];
+      }> = [];
 
-        for (let i = 0; i < excelData.length; i++) {
-            setImportingIndex(i);
-            const row = excelData[i];
+      // Option group 1
+      if (row.option_group_1_name && row.option_group_1_values) {
+        const values = row.option_group_1_values
+          .split(";")
+          .map((v) => v.trim());
+        const images: File[] = [];
 
-            try {
-                // 1. Extract file names from paths
-                const mainImageFileName = extractFileName(row["Ảnh đại diện (URL/Path)"]);
-                const mediaImageFileNames = (row["Ảnh phụ (URL/Path, cách nhau bởi dấu phẩy)"] || "")
-                    .split(',')
-                    .map(path => extractFileName(path.trim()))
-                    .filter(name => name);
-
-                // 2. Find corresponding File objects
-                const mainImageFile = imageFilesMap[mainImageFileName];
-                if (!mainImageFile) {
-                    throw new Error(`Không tìm thấy file ảnh đại diện "${mainImageFileName}". Vui lòng upload file này.`);
-                }
-
-                const mediaImageFiles = mediaImageFileNames
-                    .map(name => imageFilesMap[name])
-                    .filter(Boolean) as File[];
-
-                // 3. Upload images to media server first
-                // Upload main image
-                const uploadedMainImageName = await productService.uploadMedia(mainImageFile);
-
-                // Upload media images (batch)
-                let uploadedMediaNames: string[] = [];
-                if (mediaImageFiles.length > 0) {
-                    uploadedMediaNames = await productService.uploadMediaBatch(mediaImageFiles);
-                }
-
-                // 4. Create product payload with uploaded image names
-                const payload = mapRowToPayload(row, shopId, uploadedMainImageName, uploadedMediaNames);
-
-                // 5. Create product using payload (without files since images are already uploaded)
-                // We need to use a different endpoint or modify the existing one
-                // For now, let's use the createProduct with files
-                await productService.createProduct(payload, {
-                    image: mainImageFile,
-                    media: mediaImageFiles,
-                });
-
-                successCount++;
-                setImportStatus(prev => ({ ...prev, [i]: "success" }));
-            } catch (error: any) {
-                console.error(`Lỗi dòng ${i + 1}:`, error);
-                errorCount++;
-                setImportStatus(prev => ({ ...prev, [i]: "error" }));
-                toast.error(`Lỗi dòng ${i + 1}: ${row["Tên sản phẩm"]}`, {
-                    description: error.message,
-                });
+        if (row.option_group_1_images) {
+          const imagePaths = row.option_group_1_images
+            .split(";")
+            .map((p) => p.trim());
+          for (const path of imagePaths) {
+            const file = findImageFile(path, folder);
+            if (file) {
+              images.push(file);
             }
+          }
         }
 
-        // Reset state sau khi hoàn tất
-        setIsUploading(false);
-        setImportingIndex(null);
-        queryClient.invalidateQueries({ queryKey: ["products"] });
-        toast.success(`Import hoàn tất`, {
-            description: `Thành công: ${successCount}, Lỗi: ${errorCount}`,
+        optionGroups.push({
+          name: row.option_group_1_name,
+          values,
+          images,
         });
+      }
 
-        if (errorCount === 0) {
-            setIsOpen(false);
-            setExcelData([]);
-            setImageFilesMap({});
-            setImportStatus({});
-        }
-    };
+      // Option group 2
+      if (row.option_group_2_name && row.option_group_2_values) {
+        const values = row.option_group_2_values
+          .split(";")
+          .map((v) => v.trim());
+        optionGroups.push({
+          name: row.option_group_2_name,
+          values,
+          images: [],
+        });
+      }
 
-    const updateCell = (index: number, key: keyof ExcelRow, value: string | number) => {
-        const newData = [...excelData];
-        (newData[index] as any)[key] = value;
-        setExcelData(newData);
-    };
-
-    const renderImagePreview = (path: string) => {
-        const fileName = extractFileName(path);
-        if (!fileName) {
-            return (
-                <div className="h-10 w-10 bg-[#FFF0E0] rounded-lg flex items-center justify-center text-[#78716C] text-[10px] text-center">
-                    Trống
-                </div>
-            );
-        }
-
-        const file = imageFilesMap[fileName];
-        if (!file) {
-            return (
-                <div className="h-10 w-10 bg-red-50 rounded-lg flex items-center justify-center border border-red-200" title={`Chưa upload: ${fileName}`}>
-                    <AlertCircle className="h-4 w-4 text-red-400" />
-                </div>
-            );
+      // Generate SKU combinations (Cartesian product)
+      const generateSkuCombinations = () => {
+        if (optionGroups.length === 0) {
+          return [
+            {
+              sku_code: "",
+              price: parseFloat(row.sku_price) || 0,
+              quantity: parseInt(row.sku_quantity) || 0,
+              weight: parseFloat(row.sku_weight) || 0,
+              option_value: [],
+            },
+          ];
         }
 
-        return (
-            <div className="group relative h-10 w-10">
-                <img src={URL.createObjectURL(file)} alt="preview" className="h-full w-full object-cover rounded-lg border border-[#FFB38A]" />
-            </div>
+        const cartesian = (arr: any[][]): any[][] => {
+          return arr.reduce(
+            (acc, curr) => {
+              return acc.flatMap((a) => curr.map((c) => [...a, c]));
+            },
+            [[]] as any[][]
+          );
+        };
+
+        const valueArrays = optionGroups.map((group) =>
+          group.values.map((value) => ({
+            option_name: group.name,
+            value,
+          }))
         );
-    };
 
-    // Count required images
-    const getRequiredImages = () => {
-        const required = new Set<string>();
-        excelData.forEach(row => {
-            const main = extractFileName(row["Ảnh đại diện (URL/Path)"]);
-            if (main) required.add(main);
+        const combinations = cartesian(valueArrays);
 
-            const media = (row["Ảnh phụ (URL/Path, cách nhau bởi dấu phẩy)"] || "")
-                .split(',')
-                .map(p => extractFileName(p.trim()))
-                .filter(n => n);
-            media.forEach(m => required.add(m));
+        return combinations.map((combo) => ({
+          sku_code: "",
+          price: parseFloat(row.sku_price) || 0,
+          quantity: parseInt(row.sku_quantity) || 0,
+          weight: parseFloat(row.sku_weight) || 0,
+          option_value: combo,
+        }));
+      };
+
+      // Create option_value list
+      const optionValues: Array<{ option_name: string; value: string }> = [];
+      optionGroups.forEach((group) => {
+        group.values.forEach((value) => {
+          optionValues.push({
+            option_name: group.name,
+            value,
+          });
         });
-        return required;
-    };
+      });
 
-    const requiredImages = excelData.length > 0 ? getRequiredImages() : new Set<string>();
-    const uploadedCount = [...requiredImages].filter(name => imageFilesMap[name]).length;
-    const missingCount = requiredImages.size - uploadedCount;
+      // Prepare payload
+      const payload: CreateProductPayload = {
+        name: row.name,
+        key:
+          row.name
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-") + `-${Date.now()}`,
+        description: row.description,
+        short_description: row.short_description,
+        category_id: row.category_id,
+        shop_id: shopId!,
+        brand_id: "00362fbd-bb1c-4075-ad3c-765c560462de",
+        product_is_permission_return: row.allow_return === "Có",
+        product_is_permission_check: row.allow_check === "Có",
+        product_sku: generateSkuCombinations(),
+        option_value: optionValues,
+      };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
+      // Collect option value images
+      const optionValueImages: File[] = [];
+      optionGroups.forEach((group) => {
+        optionValueImages.push(...group.images);
+      });
+
+      // Call API
+      await productService.createProduct(payload, {
+        image: imageFile,
+        media: mediaFiles.length > 0 ? mediaFiles : undefined,
+        option_value_images:
+          optionValueImages.length > 0 ? optionValueImages : undefined,
+      });
+
+      return {
+        row: row.rowNumber,
+        status: "success",
+        message: "Import thành công",
+        productName: row.name,
+      };
+    } catch (error: any) {
+      return {
+        row: row.rowNumber,
+        status: "error",
+        message: error.message || "Lỗi không xác định",
+        productName: row.name,
+      };
+    }
+  };
+
+  // Handle import
+  const handleImport = async () => {
+    if (!excelFile) {
+      toast.error("Vui lòng chọn file Excel");
+      return;
+    }
+
+    if (!imageFolder || imageFolder.length === 0) {
+      toast.error("Vui lòng chọn thư mục chứa ảnh");
+      return;
+    }
+
+    if (!shopId) {
+      toast.error("Không tìm thấy Shop ID");
+      return;
+    }
+
+    try {
+      setImporting(true);
+      setProgress(0);
+      setResults([]);
+
+      // Parse Excel
+      const rows = await parseExcelFile(excelFile);
+
+      if (rows.length === 0) {
+        toast.error("File Excel không có dữ liệu");
+        setImporting(false);
+        return;
+      }
+
+      toast.info(`Bắt đầu import ${rows.length} sản phẩm...`);
+
+      // Import each row
+      const importResults: ImportResult[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const result = await importSingleProduct(rows[i], imageFolder);
+        importResults.push(result);
+        setResults([...importResults]);
+        setProgress(((i + 1) / rows.length) * 100);
+
+        // Small delay to prevent overwhelming the server
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      // Show summary
+      const successCount = importResults.filter(
+        (r) => r.status === "success"
+      ).length;
+      const errorCount = importResults.filter(
+        (r) => r.status === "error"
+      ).length;
+
+      if (successCount > 0) {
+        toast.success(`Import thành công ${successCount} sản phẩm`, {
+          description:
+            errorCount > 0 ? `${errorCount} sản phẩm lỗi` : undefined,
+        });
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+      } else {
+        toast.error("Import thất bại", {
+          description: "Không có sản phẩm nào được tạo thành công",
+        });
+      }
+    } catch (error: any) {
+      console.error("Import error:", error);
+      toast.error("Lỗi khi import", {
+        description: error.message || "Vui lòng thử lại",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setExcelFile(null);
+    setImageFolder(null);
+    setProgress(0);
+    setResults([]);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          size="lg"
+          variant="outline"
+          className="bg-white border-2 border-[#FF6A00] text-[#FF6A00] hover:bg-[#FFF0E0] hover:text-[#E65100] shadow-xl font-semibold px-8 py-6 rounded-xl transition-all duration-300 hover:scale-105"
+        >
+          <Upload className="mr-2 h-5 w-5" />
+          Import Excel
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-[#FF6A00] flex items-center gap-2">
+            <FileSpreadsheet className="h-6 w-6" />
+            Import sản phẩm từ Excel
+          </DialogTitle>
+          <DialogDescription className="text-base">
+            Tải lên file Excel và thư mục chứa ảnh để import hàng loạt sản phẩm
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-6 py-4">
+          {/* Download Template */}
+          <div className="bg-linear-to-r from-orange-50 to-orange-100 p-4 rounded-xl border-2 border-orange-200">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-[#FF6A00] rounded-lg">
+                <Download className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Bước 1: Tải file mẫu
+                </h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Tải xuống file Excel mẫu và điền thông tin sản phẩm
+                </p>
                 <Button
-                    className="text-white shadow-lg font-semibold px-6 py-5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                    style={{ background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)" }}
+                  onClick={downloadTemplate}
+                  variant="outline"
+                  className="bg-white hover:bg-gray-50 border-2 border-[#FF6A00] text-[#FF6A00] font-semibold"
                 >
-                    <FileSpreadsheet className="mr-2 h-5 w-5" />
-                    Import Excel
+                  <Download className="mr-2 h-4 w-4" />
+                  Tải file mẫu
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-[#FF6A00]">Import Sản Phẩm Hàng Loạt</DialogTitle>
-                </DialogHeader>
+              </div>
+            </div>
+          </div>
 
-                <div className="flex-1 overflow-hidden space-y-4">
-                    {!excelData.length ? (
-                        <div className="flex flex-col items-center justify-center h-[400px] border-2 border-dashed border-[#FFB38A] rounded-2xl bg-[#FFF0E0]/30">
-                            <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" id="excel-upload" />
-                            <Label htmlFor="excel-upload" className="cursor-pointer flex flex-col items-center p-8 hover:opacity-80 transition-opacity">
-                                <div className="p-4 rounded-2xl mb-4" style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}>
-                                    <Upload className="h-10 w-10 text-white" />
-                                </div>
-                                <span className="font-bold text-lg text-[#1C1917]">Bước 1: Tải lên file Excel</span>
-                                <span className="text-sm text-[#78716C] mt-2">Hỗ trợ định dạng .xlsx, .xls</span>
-                            </Label>
-                            <Button variant="link" onClick={downloadProductImportTemplate} className="text-[#FF6A00] font-semibold">
-                                Tải file mẫu Excel
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col h-full space-y-4">
-                            {/* Step 2: Upload images */}
-                            <div className="p-4 bg-[#FFF0E0] border border-[#FFB38A]/30 rounded-xl flex gap-3 items-start">
-                                <Info className="h-5 w-5 text-[#FF6A00] mt-0.5 shrink-0" />
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-[#E65100]">Bước 2: Tải lên file ảnh</h4>
-                                    <p className="text-sm text-[#78716C] mt-1">
-                                        Chọn tất cả file ảnh được liệt kê trong Excel. Hệ thống sẽ tự động khớp tên file.
-                                    </p>
-                                    <div className="flex items-center gap-4 mt-3">
-                                        <input type="file" multiple accept="image/*" onChange={handleImageSelection} id="image-upload" className="hidden" />
-                                        <Button asChild className="text-white" style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}>
-                                            <Label htmlFor="image-upload" className="cursor-pointer">
-                                                <ImageUp className="mr-2 h-4 w-4" /> Chọn file ảnh
-                                            </Label>
-                                        </Button>
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Badge variant={missingCount === 0 ? "success" : "warning"}>
-                                                {uploadedCount}/{requiredImages.size} ảnh
-                                            </Badge>
-                                            {missingCount > 0 && (
-                                                <span className="text-red-500 font-medium">Còn thiếu {missingCount} ảnh</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Data table */}
-                            <div className="flex-1 overflow-hidden border border-[#FFB38A]/30 rounded-xl">
-                                <ScrollArea className="h-[350px]">
-                                    <Table>
-                                        <TableHeader className="bg-[#FFF0E0] sticky top-0 z-10">
-                                            <TableRow>
-                                                <TableHead className="w-[60px] text-[#E65100]">Ảnh</TableHead>
-                                                <TableHead className="min-w-[200px] text-[#E65100]">Tên sản phẩm</TableHead>
-                                                <TableHead className="min-w-[120px] text-[#E65100]">Danh mục ID</TableHead>
-                                                <TableHead className="min-w-[100px] text-[#E65100]">SKU</TableHead>
-                                                <TableHead className="min-w-[100px] text-[#E65100]">Giá</TableHead>
-                                                <TableHead className="min-w-[80px] text-[#E65100]">Kho</TableHead>
-                                                <TableHead className="min-w-[150px] text-[#E65100]">Phân loại</TableHead>
-                                                <TableHead className="w-[60px] text-[#E65100]">TT</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {excelData.map((row, index) => (
-                                                <TableRow
-                                                    key={index}
-                                                    className={
-                                                        importingIndex === index
-                                                            ? "bg-blue-50"
-                                                            : importStatus[index] === "success"
-                                                                ? "bg-green-50"
-                                                                : importStatus[index] === "error"
-                                                                    ? "bg-red-50"
-                                                                    : ""
-                                                    }
-                                                >
-                                                    <TableCell className="p-2">{renderImagePreview(row["Ảnh đại diện (URL/Path)"])}</TableCell>
-                                                    <TableCell className="p-2">
-                                                        <Input
-                                                            value={row["Tên sản phẩm"]}
-                                                            onChange={(e) => updateCell(index, "Tên sản phẩm", e.target.value)}
-                                                            className="h-8 text-sm"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="p-2">
-                                                        <Input
-                                                            value={row["Danh mục ID"]}
-                                                            onChange={(e) => updateCell(index, "Danh mục ID", e.target.value)}
-                                                            className="h-8 text-sm"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="p-2">
-                                                        <Input
-                                                            value={row["SKU Code"]}
-                                                            onChange={(e) => updateCell(index, "SKU Code", e.target.value)}
-                                                            className="h-8 text-sm"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="p-2">
-                                                        <Input
-                                                            type="number"
-                                                            value={row["Giá"]}
-                                                            onChange={(e) => updateCell(index, "Giá", Number(e.target.value))}
-                                                            className="h-8 text-sm"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="p-2">
-                                                        <Input
-                                                            type="number"
-                                                            value={row["Kho"]}
-                                                            onChange={(e) => updateCell(index, "Kho", Number(e.target.value))}
-                                                            className="h-8 text-sm"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="p-2">
-                                                        <div className="flex gap-1 flex-wrap">
-                                                            {row["Phân loại 1: Giá trị"] && (
-                                                                <Badge variant="secondary" className="text-xs">{row["Phân loại 1: Giá trị"]}</Badge>
-                                                            )}
-                                                            {row["Phân loại 2: Giá trị"] && (
-                                                                <Badge variant="secondary" className="text-xs">{row["Phân loại 2: Giá trị"]}</Badge>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="p-2 text-center">
-                                                        {importingIndex === index ? (
-                                                            <Loader2 className="h-5 w-5 animate-spin text-[#FF6A00] mx-auto" />
-                                                        ) : importStatus[index] === "success" ? (
-                                                            <Check className="h-5 w-5 text-green-500 mx-auto" />
-                                                        ) : importStatus[index] === "error" ? (
-                                                            <X className="h-5 w-5 text-red-500 mx-auto" />
-                                                        ) : (
-                                                            <div className="h-5 w-5 rounded-full border-2 border-[#FFB38A]/50 mx-auto" />
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                    <ScrollBar orientation="horizontal" />
-                                </ScrollArea>
-                            </div>
-                        </div>
-                    )}
+          {/* Upload Excel */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-[#FF6A00]" />
+              Bước 2: Chọn file Excel đã điền
+            </Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#FF6A00] transition-colors">
+              <Input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+                disabled={importing}
+                className="cursor-pointer"
+              />
+              {excelFile && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="font-medium">{excelFile.name}</span>
                 </div>
+              )}
+            </div>
+          </div>
 
-                <DialogFooter className="pt-4 gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            setIsOpen(false);
-                            setExcelData([]);
-                            setImageFilesMap({});
-                            setImportStatus({});
-                        }}
-                        disabled={isUploading}
-                    >
-                        Đóng
-                    </Button>
-                    {excelData.length > 0 && (
-                        <Button
-                            onClick={handleImport}
-                            disabled={isUploading || missingCount > 0}
-                            className="text-white min-w-[200px]"
-                            style={{
-                                background: isUploading || missingCount > 0
-                                    ? "#ccc"
-                                    : "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)"
-                            }}
-                        >
-                            {isUploading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Đang xử lý {importingIndex !== null ? `${importingIndex + 1}/${excelData.length}` : ""}
-                                </>
-                            ) : missingCount > 0 ? (
-                                `Còn thiếu ${missingCount} ảnh`
-                            ) : (
-                                `Bắt đầu Import (${excelData.length} sản phẩm)`
-                            )}
-                        </Button>
+          {/* Upload Image Folder */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-[#FF6A00]" />
+              Bước 3: Chọn thư mục chứa tất cả ảnh sản phẩm
+            </Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#FF6A00] transition-colors">
+              <Input
+                type="file"
+                // @ts-ignore - webkitdirectory is not in the type definition
+                webkitdirectory=""
+                directory=""
+                multiple
+                onChange={(e) => setImageFolder(e.target.files)}
+                disabled={importing}
+                className="cursor-pointer"
+              />
+              {imageFolder && imageFolder.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="font-medium">
+                      Đã chọn {imageFolder.length} file
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 max-h-32 overflow-y-auto bg-gray-50 p-2 rounded">
+                    {Array.from(imageFolder)
+                      .slice(0, 10)
+                      .map((file, i) => (
+                        <div key={i}>• {file.name}</div>
+                      ))}
+                    {imageFolder.length > 10 && (
+                      <div className="text-gray-400 mt-1">
+                        ... và {imageFolder.length - 10} file khác
+                      </div>
                     )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 text-orange-500" />
+              <span>
+                Chọn thư mục chứa <strong>tất cả ảnh</strong> sản phẩm. Hệ thống
+                sẽ tự động tìm ảnh theo tên file trong Excel.
+              </span>
+            </p>
+          </div>
+
+          {/* Progress */}
+          {importing && (
+            <div className="space-y-3 bg-blue-50 p-4 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span>Đang import...</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+          )}
+
+          {/* Results */}
+          {results.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">
+                  Kết quả import ({results.length} dòng)
+                </Label>
+                <div className="flex gap-4 text-sm">
+                  <span className="text-green-600 font-medium">
+                    ✓ {results.filter((r) => r.status === "success").length}{" "}
+                    thành công
+                  </span>
+                  <span className="text-red-600 font-medium">
+                    ✗ {results.filter((r) => r.status === "error").length} lỗi
+                  </span>
+                </div>
+              </div>
+              <ScrollArea className="h-64 border rounded-xl bg-gray-50">
+                <div className="p-4 space-y-2">
+                  {results.map((result, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-start gap-3 p-3 rounded-lg ${
+                        result.status === "success"
+                          ? "bg-green-50 border border-green-200"
+                          : "bg-red-50 border border-red-200"
+                      }`}
+                    >
+                      {result.status === "success" ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">
+                            Dòng {result.row}
+                          </span>
+                          {result.productName && (
+                            <span className="text-sm text-gray-600 truncate">
+                              - {result.productName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          {result.message}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-between items-center pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            disabled={importing}
+            className="border-2"
+          >
+            Đặt lại
+          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={importing}
+              className="border-2"
+            >
+              Đóng
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={!excelFile || !imageFolder || importing}
+              className="bg-linear-to-r from-[#FF6A00] to-[#FFB000] hover:from-[#E65100] hover:to-[#FF6A00] px-8 font-semibold"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang import...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Bắt đầu import
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

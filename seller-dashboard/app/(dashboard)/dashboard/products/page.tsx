@@ -55,7 +55,7 @@ export default function ProductsPage() {
 
   const [filters, setFilters] = useState<ProductFilters>({
     page: 1,
-    limit: 21,
+    limit: 20,
     shop_id: shopId || undefined,
     sort: "price_desc",
   });
@@ -102,10 +102,21 @@ export default function ProductsPage() {
 
   if (!shopId) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))" }}>
-        <Alert variant="destructive" className="max-w-md border-2 border-red-200 rounded-2xl shadow-xl">
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))",
+        }}
+      >
+        <Alert
+          variant="destructive"
+          className="max-w-md border-2 border-red-200 rounded-2xl shadow-xl"
+        >
           <AlertCircle className="h-6 w-6" />
-          <AlertTitle className="text-xl font-bold">Không tìm thấy Shop ID</AlertTitle>
+          <AlertTitle className="text-xl font-bold">
+            Không tìm thấy Shop ID
+          </AlertTitle>
           <AlertDescription className="text-base mt-2">
             Vui lòng đăng ký shop hoặc đăng nhập lại
           </AlertDescription>
@@ -115,16 +126,23 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))" }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))",
+      }}
+    >
       <div className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
         {/* Header với gradient động */}
         <div
           className="relative overflow-hidden rounded-3xl p-10 text-white shadow-2xl transform transition-all duration-300 hover:shadow-3xl"
           style={{
-            background: "linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%)",
+            background:
+              "linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%)",
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-br from-black/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32"></div>
 
           <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
@@ -138,7 +156,11 @@ export default function ProductsPage() {
                   <Sparkles className="h-8 w-8 text-[#FFD3A3]" />
                 </h1>
                 <p className="mt-2 text-lg text-white/95 font-medium">
-                  Tổng: <span className="text-[#FFF0E0] font-bold">{productData?.totalElements || 0}</span> sản phẩm
+                  Tổng:{" "}
+                  <span className="text-[#FFF0E0] font-bold">
+                    {productData?.totalElements || 0}
+                  </span>{" "}
+                  sản phẩm
                 </p>
               </div>
             </div>
@@ -149,7 +171,7 @@ export default function ProductsPage() {
               {/* Nút chính */}
               <Button
                 size="lg"
-                className="bg-white text-[#FF6A00] hover:bg-[#FFF0E0] hover:text-[#E65100] shadow-xl font-semibold px-8 py-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                className="bg-white text-[#ffffff] hover:bg-[#FFF0E0] hover:text-[#E65100] shadow-xl font-semibold px-8 py-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
                 onClick={() => router.push("/dashboard/products/create")}
               >
                 <Plus className="mr-2 h-5 w-5" />
@@ -163,10 +185,18 @@ export default function ProductsPage() {
         <Card className="border-none shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
           <CardHeader
             className="border-b-0 pb-4"
-            style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}
+            style={{
+              background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)",
+            }}
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl shadow-lg" style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}>
+              <div
+                className="p-2 rounded-xl shadow-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                }}
+              >
                 <Filter className="h-5 w-5 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-[#E65100]">
@@ -191,7 +221,10 @@ export default function ProductsPage() {
                   <Button
                     onClick={handleSearch}
                     className="h-12 px-6 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                    style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                    }}
                   >
                     <Search className="h-5 w-5" />
                   </Button>
@@ -208,10 +241,18 @@ export default function ProductsPage() {
                   <SelectValue placeholder="Sắp xếp" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="price_desc" className="rounded-lg py-3">💰 Giá giảm dần</SelectItem>
-                  <SelectItem value="price_asc" className="rounded-lg py-3">💵 Giá tăng dần</SelectItem>
-                  <SelectItem value="name_asc" className="rounded-lg py-3">🔤 Tên (A-Z)</SelectItem>
-                  <SelectItem value="name_desc" className="rounded-lg py-3">🔡 Tên (Z-A)</SelectItem>
+                  <SelectItem value="price_desc" className="rounded-lg py-3">
+                    💰 Giá giảm dần
+                  </SelectItem>
+                  <SelectItem value="price_asc" className="rounded-lg py-3">
+                    💵 Giá tăng dần
+                  </SelectItem>
+                  <SelectItem value="name_asc" className="rounded-lg py-3">
+                    🔤 Tên (A-Z)
+                  </SelectItem>
+                  <SelectItem value="name_desc" className="rounded-lg py-3">
+                    🔡 Tên (Z-A)
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -229,10 +270,18 @@ export default function ProductsPage() {
                   <SelectValue placeholder="Số lượng" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="10" className="rounded-lg py-3">📦 10 sản phẩm</SelectItem>
-                  <SelectItem value="20" className="rounded-lg py-3">📦 20 sản phẩm</SelectItem>
-                  <SelectItem value="50" className="rounded-lg py-3">📦 50 sản phẩm</SelectItem>
-                  <SelectItem value="100" className="rounded-lg py-3">📦 100 sản phẩm</SelectItem>
+                  <SelectItem value="10" className="rounded-lg py-3">
+                    📦 10 sản phẩm
+                  </SelectItem>
+                  <SelectItem value="20" className="rounded-lg py-3">
+                    📦 20 sản phẩm
+                  </SelectItem>
+                  <SelectItem value="50" className="rounded-lg py-3">
+                    📦 50 sản phẩm
+                  </SelectItem>
+                  <SelectItem value="100" className="rounded-lg py-3">
+                    📦 100 sản phẩm
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -254,7 +303,10 @@ export default function ProductsPage() {
                 ))}
               </div>
             ) : error ? (
-              <Alert variant="destructive" className="border-2 border-red-200 rounded-2xl">
+              <Alert
+                variant="destructive"
+                className="border-2 border-red-200 rounded-2xl"
+              >
                 <AlertCircle className="h-5 w-5" />
                 <AlertTitle className="text-lg font-bold">Lỗi</AlertTitle>
                 <AlertDescription className="text-base">
@@ -270,7 +322,9 @@ export default function ProductsPage() {
                     const priceRange =
                       product.min_price === product.max_price
                         ? formatPrice(product.min_price)
-                        : `${formatPrice(product.min_price)} - ${formatPrice(product.max_price)}`;
+                        : `${formatPrice(product.min_price)} - ${formatPrice(
+                            product.max_price
+                          )}`;
 
                     return (
                       <Card
@@ -285,7 +339,8 @@ export default function ProductsPage() {
                             loading="lazy"
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder-image.jpg";
+                              (e.target as HTMLImageElement).src =
+                                "/placeholder-image.jpg";
                             }}
                           />
 
@@ -300,25 +355,40 @@ export default function ProductsPage() {
                                   <MoreHorizontal className="h-4 w-4 text-[#FF6A00]" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44 rounded-lg shadow-xl border border-[#FFB38A]/20">
-                                <DropdownMenuLabel className="text-sm font-bold text-[#E65100]">Thao tác</DropdownMenuLabel>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-44 rounded-lg shadow-xl border border-[#FFB38A]/20"
+                              >
+                                <DropdownMenuLabel className="text-sm font-bold text-[#E65100]">
+                                  Thao tác
+                                </DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-[#FFB38A]/20" />
                                 <DropdownMenuItem
-                                  onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/products/${product.id}`
+                                    )
+                                  }
                                   className="rounded cursor-pointer hover:bg-[#FFF0E0] text-sm"
                                 >
                                   <Eye className="mr-2 h-4 w-4 text-[#FF8A33]" />
                                   Xem chi tiết
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => router.push(`/dashboard/products/${product.id}/edit`)}
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/products/${product.id}/edit`
+                                    )
+                                  }
                                   className="rounded cursor-pointer hover:bg-[#FFF0E0] text-sm"
                                 >
                                   <Edit className="mr-2 h-4 w-4 text-[#FFB000]" />
                                   Chỉnh sửa
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => deleteProductMutation.mutate(product.id)}
+                                  onClick={() =>
+                                    deleteProductMutation.mutate(product.id)
+                                  }
                                   className="text-red-600 hover:bg-red-50 rounded cursor-pointer text-sm"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
@@ -332,8 +402,10 @@ export default function ProductsPage() {
                         {/* Content - compact */}
                         <CardContent className="p-3">
                           <h3
-                            className="line-clamp-2 font-semibold text-sm text-[#1C1917] mb-1 group-hover:text-[#FF6A00] transition-colors cursor-pointer min-h-[2.5rem]"
-                            onClick={() => router.push(`/dashboard/products/${product.id}`)}
+                            className="line-clamp-2 font-semibold text-sm text-[#1C1917] mb-1 group-hover:text-[#FF6A00] transition-colors cursor-pointer min-h-10"
+                            onClick={() =>
+                              router.push(`/dashboard/products/${product.id}`)
+                            }
                           >
                             {product.name}
                           </h3>
@@ -394,7 +466,10 @@ export default function ProductsPage() {
                               }
                               style={
                                 filters.page === page
-                                  ? { background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }
+                                  ? {
+                                      background:
+                                        "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                                    }
                                   : {}
                               }
                               onClick={() =>
@@ -429,7 +504,8 @@ export default function ProductsPage() {
                 <div
                   className="mb-6 flex h-28 w-28 items-center justify-center rounded-3xl shadow-2xl animate-pulse"
                   style={{
-                    background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                    background:
+                      "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
                   }}
                 >
                   <Package className="h-14 w-14 text-white" />
@@ -443,7 +519,10 @@ export default function ProductsPage() {
                 <Button
                   size="lg"
                   className="px-8 py-6 rounded-xl font-bold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
-                  style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                  }}
                   onClick={() => router.push("/dashboard/products/create")}
                 >
                   <Plus className="mr-2 h-6 w-6" />

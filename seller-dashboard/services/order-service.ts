@@ -23,24 +23,31 @@ export const orderService = {
 
   // Get order by ID
   getOrderById: async (orderId: string): Promise<ShopOrder> => {
-    // API trả về { result: { order: ..., order_shop: ... } }
     const response = await axiosInstance.get<{ result: OrderDetailResponseResult }>(
       `${ORDER_API}/${orderId}`
     );
-
-    // --- SỬA TẠI ĐÂY ---
-    // Chỉ trả về order_shop vì UI đang được build dựa trên ShopOrder
-    // Nếu sau này bạn cần hiển thị Địa chỉ (Shipping Address) hoặc Payment Method,
-    // bạn sẽ cần merge 2 object này lại hoặc sửa UI để nhận cả 2.
-
-    // Hiện tại để fix lỗi null, ta trả về order_shop:
     return response.data.result.order_shop;
   },
 
-  // Update order status
-  updateOrderStatus: async (orderId: string, status: OrderStatus): Promise<void> => {
-    await axiosInstance.put(`${ORDER_API}/callback_payment_online/${orderId}`, {
-      status,
-    });
+  // Update order status - SỬA LẠI ĐỂ DÙNG API MỚI
+  updateOrderStatus: async (
+    shopOrderId: string, 
+    status: OrderStatus, 
+    shopId: string,
+    reason?: string
+  ): Promise<void> => {
+    const response = await axiosInstance.put(
+      `${ORDER_API}/admin/update_status?shop_id=${shopId}`,
+      {
+        status,
+        shop_order_id: shopOrderId,
+        reason: reason || "",
+      }
+    );
+
+    // Kiểm tra response status
+    if (response.data.code !== 200) {
+      throw new Error(response.data.message || "Cập nhật trạng thái thất bại");
+    }
   },
 };

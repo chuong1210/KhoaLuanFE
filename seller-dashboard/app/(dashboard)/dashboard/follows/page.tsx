@@ -77,16 +77,23 @@ export default function FollowersPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))" }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(255,106,0,0.08), rgba(255,179,138,0.03))",
+      }}
+    >
       <div className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
         {/* Header with Stats */}
         <div
           className="relative overflow-hidden rounded-3xl p-10 text-white shadow-2xl"
           style={{
-            background: "linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%)",
+            background:
+              "linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%)",
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-black/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-br from-black/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32"></div>
 
           <div className="relative">
@@ -96,7 +103,9 @@ export default function FollowersPage() {
                   <Users className="h-10 w-10" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold tracking-tight">Người theo dõi</h1>
+                  <h1 className="text-4xl font-bold tracking-tight">
+                    Người theo dõi
+                  </h1>
                   <p className="mt-2 text-lg text-white/95">
                     Quản lý cộng đồng của bạn
                   </p>
@@ -110,7 +119,9 @@ export default function FollowersPage() {
                       <TrendingUp className="h-6 w-6 text-[#FFF0E0]" />
                       <div>
                         <p className="text-sm text-white/80">Tổng số</p>
-                        <p className="text-3xl font-bold">{followersData.extra.totalElements}</p>
+                        <p className="text-3xl font-bold">
+                          {followersData.extra.totalElements}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -122,9 +133,19 @@ export default function FollowersPage() {
 
         {/* Filters */}
         <Card className="border-none shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
-          <CardHeader style={{ background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)" }}>
+          <CardHeader
+            style={{
+              background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 100%)",
+            }}
+          >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl shadow-lg" style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}>
+              <div
+                className="p-2 rounded-xl shadow-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                }}
+              >
                 <Filter className="h-5 w-5 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-[#E65100]">
@@ -149,7 +170,10 @@ export default function FollowersPage() {
                   <Button
                     onClick={handleSearch}
                     className="h-12 px-6 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105"
-                    style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                    }}
                   >
                     <Search className="h-5 w-5" />
                   </Button>
@@ -159,15 +183,23 @@ export default function FollowersPage() {
               <Select
                 value={filters.sortBy}
                 onValueChange={(value: any) =>
-                  setFilters((prev) => ({ ...prev, sortBy: value, pageNumber: 1 }))
+                  setFilters((prev) => ({
+                    ...prev,
+                    sortBy: value,
+                    pageNumber: 1,
+                  }))
                 }
               >
                 <SelectTrigger className="h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] focus:ring-4 focus:ring-[#FF6A00]/10 rounded-xl font-medium">
                   <SelectValue placeholder="Sắp xếp" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="created_desc" className="rounded-lg py-3">📅 Mới nhất</SelectItem>
-                  <SelectItem value="created_asc" className="rounded-lg py-3">📅 Cũ nhất</SelectItem>
+                  <SelectItem value="created_desc" className="rounded-lg py-3">
+                    📅 Mới nhất
+                  </SelectItem>
+                  <SelectItem value="created_asc" className="rounded-lg py-3">
+                    📅 Cũ nhất
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -192,7 +224,10 @@ export default function FollowersPage() {
                 ))}
               </div>
             ) : error ? (
-              <Alert variant="destructive" className="border-2 border-red-200 rounded-2xl">
+              <Alert
+                variant="destructive"
+                className="border-2 border-red-200 rounded-2xl"
+              >
                 <AlertCircle className="h-5 w-5" />
                 <AlertTitle className="text-lg font-bold">Lỗi</AlertTitle>
                 <AlertDescription className="text-base">
@@ -207,17 +242,24 @@ export default function FollowersPage() {
                       key={follower.id}
                       className="group relative overflow-hidden border-2 border-[#FFB38A]/30 hover:border-[#FF6A00] transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 rounded-2xl bg-white"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF6A00]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                      <div className="absolute inset-0 bg-linear-to-br from-[#FF6A00]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
                       <CardContent className="p-6 relative">
                         <div className="flex items-start gap-4 mb-4">
                           <div className="relative">
                             <Avatar className="h-16 w-16 border-2 border-[#FFB38A]/40 group-hover:border-[#FF6A00] transition-colors">
-                              <AvatarImage src={follower.userAvatar || "/placeholder.svg"} alt={follower.userName} />
-                              <AvatarFallback className="text-xl font-bold" style={{
-                                background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-                                color: "white"
-                              }}>
+                              <AvatarImage
+                                src={follower.userAvatar || "/placeholder.svg"}
+                                alt={follower.userName}
+                              />
+                              <AvatarFallback
+                                className="text-xl font-bold"
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                                  color: "white",
+                                }}
+                              >
                                 {follower.userName[0]?.toUpperCase() || "U"}
                               </AvatarFallback>
                             </Avatar>
@@ -238,7 +280,9 @@ export default function FollowersPage() {
                           {follower.userEmail && (
                             <div className="flex items-center gap-3 text-sm text-gray-600 bg-[#FFF0E0]/50 rounded-lg p-3">
                               <Mail className="h-4 w-4 text-[#FF8A33] flex-shrink-0" />
-                              <span className="truncate">{follower.userEmail}</span>
+                              <span className="truncate">
+                                {follower.userEmail}
+                              </span>
                             </div>
                           )}
 
@@ -250,7 +294,9 @@ export default function FollowersPage() {
 
                         <div className="mt-4 pt-4 border-t border-[#FFB38A]/20">
                           <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span className="font-medium">ID: {follower.userProfileId.slice(0, 8)}...</span>
+                            <span className="font-medium">
+                              ID: {follower.userProfileId.slice(0, 8)}...
+                            </span>
                             <UserPlus className="h-4 w-4 text-[#FF6A00]" />
                           </div>
                         </div>
@@ -279,13 +325,19 @@ export default function FollowersPage() {
 
                       <div className="flex items-center gap-2">
                         {Array.from(
-                          { length: Math.min(5, followersData.extra.totalPages) },
+                          {
+                            length: Math.min(5, followersData.extra.totalPages),
+                          },
                           (_, i) => {
                             const page = i + 1;
                             return (
                               <Button
                                 key={page}
-                                variant={filters.pageNumber === page ? "default" : "outline"}
+                                variant={
+                                  filters.pageNumber === page
+                                    ? "default"
+                                    : "outline"
+                                }
                                 className={
                                   filters.pageNumber === page
                                     ? "h-11 w-11 rounded-xl font-bold text-white shadow-lg"
@@ -293,11 +345,17 @@ export default function FollowersPage() {
                                 }
                                 style={
                                   filters.pageNumber === page
-                                    ? { background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }
+                                    ? {
+                                        background:
+                                          "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                                      }
                                     : {}
                                 }
                                 onClick={() =>
-                                  setFilters((prev) => ({ ...prev, pageNumber: page }))
+                                  setFilters((prev) => ({
+                                    ...prev,
+                                    pageNumber: page,
+                                  }))
                                 }
                               >
                                 {page}
@@ -323,7 +381,8 @@ export default function FollowersPage() {
                     </div>
 
                     <div className="text-sm text-gray-600 font-medium">
-                      Trang {followersData.extra.currentPage} / {followersData.extra.totalPages}
+                      Trang {followersData.extra.currentPage} /{" "}
+                      {followersData.extra.totalPages}
                       <span className="mx-2">•</span>
                       Tổng {followersData.extra.totalElements} người theo dõi
                     </div>
@@ -335,7 +394,8 @@ export default function FollowersPage() {
                 <div
                   className="mb-6 flex h-28 w-28 items-center justify-center rounded-3xl shadow-2xl animate-pulse"
                   style={{
-                    background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                    background:
+                      "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
                   }}
                 >
                   <Users className="h-14 w-14 text-white" />

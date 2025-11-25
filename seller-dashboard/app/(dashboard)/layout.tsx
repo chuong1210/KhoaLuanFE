@@ -78,9 +78,10 @@ export default function DashboardLayout({
   if (!isInitialized || isLoading) {
     return (
       <div
-        className="flex h-screen items-center justify-center"
+        className="flex min-h-screen items-center justify-center"
         style={{
-          background: "linear-gradient(180deg, rgba(255,106,0,0.05) 0%, rgba(255,240,224,0.3) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(255,106,0,0.05) 0%, rgba(255,240,224,0.3) 100%)",
         }}
       >
         <div className="text-center">
@@ -170,14 +171,15 @@ export default function DashboardLayout({
     : [allMenuItems[0], allMenuItems[1]];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#FAFAF9]">
+    <div className="flex min-h-screen overflow-hidden bg-[#FAFAF9]">
       <DashboardSidebar menuItems={menuItems} currentPath={pathname} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <DashboardHeader />
         <main
           className="flex-1 overflow-y-auto"
           style={{
-            background: "linear-gradient(180deg, rgba(255,106,0,0.02) 0%, rgba(255,240,224,0.15) 100%)",
+            background:
+              "linear-gradient(180deg, rgba(255,106,0,0.02) 0%, rgba(255,240,224,0.15) 100%)",
           }}
         >
           {children}

@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Image from 'next/image'
+import { useState } from "react";
+import Image from "next/image";
 import {
   Search,
   Filter,
@@ -11,20 +11,20 @@ import {
   Trash2,
   Package,
   ChevronDown,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Pagination } from '@/components/ui/pagination'
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -32,64 +32,68 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { useProducts, useDeleteProduct } from '@/features/products/hooks/useProducts'
-import type { Product, ProductSearchParams } from '@/features/products/types'
-import { formatCurrency, truncateText, cn } from '@/lib/utils'
+} from "@/components/ui/dialog";
+import {
+  useProducts,
+  useDeleteProduct,
+} from "@/features/products/hooks/useProducts";
+import type { Product, ProductSearchParams } from "@/features/products/types";
+import { formatCurrency, truncateText, cn, getImageUrl } from "@/lib/utils";
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useState<ProductSearchParams>({
     page: 1,
     limit: 10,
-  })
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  });
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const { data, isLoading } = useProducts(searchParams)
-  const deleteProduct = useDeleteProduct()
+  const { data, isLoading } = useProducts(searchParams);
+  const deleteProduct = useDeleteProduct();
 
   const handleSearch = () => {
     setSearchParams((prev) => ({
       ...prev,
       keywords: searchKeyword,
       page: 1,
-    }))
-  }
+    }));
+  };
 
   const handlePageChange = (page: number) => {
-    setSearchParams((prev) => ({ ...prev, page }))
-  }
+    setSearchParams((prev) => ({ ...prev, page }));
+  };
 
   const handleSortChange = (sort: string) => {
-    setSearchParams((prev) => ({ ...prev, sort, page: 1 }))
-  }
+    setSearchParams((prev) => ({ ...prev, sort, page: 1 }));
+  };
 
   const handleViewProduct = (product: Product) => {
-    setSelectedProduct(product)
-    setIsDetailOpen(true)
-  }
+    setSelectedProduct(product);
+    setIsDetailOpen(true);
+  };
 
   const handleDeleteProduct = (productId: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-      deleteProduct.mutate(productId)
+    if (confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+      deleteProduct.mutate(productId);
     }
-  }
+  };
 
   const parseMedia = (media: string): string[] => {
     try {
-      return JSON.parse(media)
+      const parsed = JSON.parse(media);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return []
+      return [];
     }
-  }
+  };
 
   return (
     <div className="space-y-6 animate-in">
@@ -119,7 +123,7 @@ export default function ProductsPage() {
                   placeholder="Tìm kiếm sản phẩm..."
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="pl-10"
                 />
               </div>
@@ -130,7 +134,7 @@ export default function ProductsPage() {
 
             {/* Sort */}
             <Select
-              value={searchParams.sort || 'newest'}
+              value={searchParams.sort || "newest"}
               onValueChange={handleSortChange}
             >
               <SelectTrigger className="w-[180px]">
@@ -153,7 +157,9 @@ export default function ProductsPage() {
                 onChange={(e) =>
                   setSearchParams((prev) => ({
                     ...prev,
-                    price_min: e.target.value ? Number(e.target.value) : undefined,
+                    price_min: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
                   }))
                 }
               />
@@ -165,7 +171,9 @@ export default function ProductsPage() {
                 onChange={(e) =>
                   setSearchParams((prev) => ({
                     ...prev,
-                    price_max: e.target.value ? Number(e.target.value) : undefined,
+                    price_max: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
                   }))
                 }
               />
@@ -231,10 +239,11 @@ export default function ProductsPage() {
                       <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-orange-apricot">
                         {product.image ? (
                           <Image
-                            src={product.image.replace('0.0.0.0', 'localhost')}
+                            src={getImageUrl(product.image)}
                             alt={product.name}
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
@@ -249,12 +258,14 @@ export default function ProductsPage() {
                           {truncateText(product.name, 40)}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {truncateText(product.short_description || '', 50)}
+                          {truncateText(product.short_description || "", 50)}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-gray-600">{product.shop_id}</span>
+                      <span className="text-sm text-gray-600">
+                        {product.shop_id}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div>
@@ -271,10 +282,14 @@ export default function ProductsPage() {
                     <TableCell>
                       <Badge
                         variant={
-                          product.delete_status === 'Active' ? 'success' : 'error'
+                          product.delete_status === "Active"
+                            ? "success"
+                            : "error"
                         }
                       >
-                        {product.delete_status === 'Active' ? 'Hoạt động' : 'Đã xóa'}
+                        {product.delete_status === "Active"
+                          ? "Hoạt động"
+                          : "Đã xóa"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -343,10 +358,11 @@ export default function ProductsPage() {
                 <div className="relative h-32 w-32 rounded-lg overflow-hidden bg-orange-apricot flex-shrink-0">
                   {selectedProduct.image ? (
                     <Image
-                      src={selectedProduct.image.replace('0.0.0.0', 'localhost')}
+                      src={getImageUrl(selectedProduct.image)}
                       alt={selectedProduct.name}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
@@ -355,7 +371,9 @@ export default function ProductsPage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{selectedProduct.name}</h3>
+                  <h3 className="font-semibold text-lg">
+                    {selectedProduct.name}
+                  </h3>
                   <p className="text-gray-500 text-sm mt-1">
                     {selectedProduct.short_description}
                   </p>
@@ -364,17 +382,25 @@ export default function ProductsPage() {
                       <span className="text-sm text-gray-500">Giá:</span>
                       <span className="ml-2 font-bold text-orange-vivid">
                         {formatCurrency(selectedProduct.min_price)}
-                        {selectedProduct.min_price !== selectedProduct.max_price && (
-                          <span> - {formatCurrency(selectedProduct.max_price)}</span>
+                        {selectedProduct.min_price !==
+                          selectedProduct.max_price && (
+                          <span>
+                            {" "}
+                            - {formatCurrency(selectedProduct.max_price)}
+                          </span>
                         )}
                       </span>
                     </div>
                     <Badge
                       variant={
-                        selectedProduct.delete_status === 'Active' ? 'success' : 'error'
+                        selectedProduct.delete_status === "Active"
+                          ? "success"
+                          : "error"
                       }
                     >
-                      {selectedProduct.delete_status === 'Active' ? 'Hoạt động' : 'Đã xóa'}
+                      {selectedProduct.delete_status === "Active"
+                        ? "Hoạt động"
+                        : "Đã xóa"}
                     </Badge>
                   </div>
                 </div>
@@ -384,19 +410,27 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Shop ID:</span>
-                  <span className="ml-2 font-medium">{selectedProduct.shop_id}</span>
+                  <span className="ml-2 font-medium">
+                    {selectedProduct.shop_id}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-500">Category ID:</span>
-                  <span className="ml-2 font-medium">{selectedProduct.category_id}</span>
+                  <span className="ml-2 font-medium">
+                    {selectedProduct.category_id}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-500">Brand ID:</span>
-                  <span className="ml-2 font-medium">{selectedProduct.brand_id}</span>
+                  <span className="ml-2 font-medium">
+                    {selectedProduct.brand_id}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-500">Tạo bởi:</span>
-                  <span className="ml-2 font-medium">{selectedProduct.create_by}</span>
+                  <span className="ml-2 font-medium">
+                    {selectedProduct.create_by}
+                  </span>
                 </div>
               </div>
 
@@ -406,7 +440,9 @@ export default function ProductsPage() {
                   <span className="text-sm text-gray-500">Mô tả:</span>
                   <div
                     className="mt-2 text-sm text-gray-700 max-h-40 overflow-y-auto"
-                    dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
+                    dangerouslySetInnerHTML={{
+                      __html: selectedProduct.description,
+                    }}
                   />
                 </div>
               )}
@@ -422,10 +458,11 @@ export default function ProductsPage() {
                         className="relative h-16 w-16 rounded overflow-hidden bg-orange-apricot"
                       >
                         <Image
-                          src={url.replace('0.0.0.0', 'localhost')}
+                          src={getImageUrl(url)}
                           alt={`Media ${index + 1}`}
                           fill
                           className="object-cover"
+                          unoptimized
                         />
                       </div>
                     ))}
@@ -437,5 +474,5 @@ export default function ProductsPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

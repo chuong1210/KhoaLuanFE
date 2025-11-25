@@ -62,8 +62,8 @@ export function getStatusColor(status: string): string {
   return statusColors[status] || 'badge-info'
 }
 
-export function parseQueryParams<T extends Record<string, unknown>>(
-  params: T
+export function parseQueryParams(
+  params: Record<string, unknown> | { [key: string]: unknown }
 ): string {
   const searchParams = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
@@ -83,4 +83,18 @@ export function debounce<T extends (...args: unknown[]) => void>(
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
   }
+}
+
+// Add this to @/lib/utils
+
+export function getImageUrl(imageName: string | null | undefined): string {
+  if (!imageName) return '/placeholder-product.png' // Add a placeholder image
+  
+  // If it's already a full URL (starts with http or https), return it
+  if (imageName.startsWith('http://') || imageName.startsWith('https://')) {
+    return imageName
+  }
+  
+  // Otherwise, construct the media API URL
+  return `http://localhost:9001/v1/media/${imageName}`
 }

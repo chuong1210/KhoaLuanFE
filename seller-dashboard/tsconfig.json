@@ -35,7 +35,9 @@
     ".next/types/**/*.ts",
     ".next\\dev/types/**/*.ts",
     ".next\\dev/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+        "global.d.ts" // Thêm dòng này nếu bạn làm theo Cách 2
+
   ],
   "exclude": [
     "node_modules"

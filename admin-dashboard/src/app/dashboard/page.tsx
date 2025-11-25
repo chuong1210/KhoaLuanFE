@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -10,32 +10,45 @@ import {
   Package,
   Users,
   Wallet,
-} from 'lucide-react'
-import { format, subDays } from 'date-fns'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { RevenueChart } from '@/components/charts/RevenueChart'
-import { OrderStatusChart } from '@/components/charts/OrderStatusChart'
-import { TopShopsChart } from '@/components/charts/TopShopsChart'
+} from "lucide-react";
+import { format, subDays } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RevenueChart } from "@/components/charts/RevenueChart";
+import { OrderStatusChart } from "@/components/charts/OrderStatusChart";
+import { TopShopsChart } from "@/components/charts/TopShopsChart";
 import {
   usePlatformOverview,
   useRevenueTimeseries,
   usePlatformShops,
-} from '@/features/analytics/hooks/useAnalytics'
-import { formatCurrency, formatNumber, cn } from '@/lib/utils'
+} from "@/features/analytics/hooks/useAnalytics";
+import { formatCurrency, formatNumber, cn } from "@/lib/utils";
 
 interface StatCardProps {
-  title: string
-  value: string | number
-  change?: number
-  icon: React.ElementType
-  iconColor?: string
-  isLoading?: boolean
+  title: string;
+  value: string | number;
+  change?: number;
+  icon: React.ElementType;
+  iconColor?: string;
+  isLoading?: boolean;
 }
 
-function StatCard({ title, value, change, icon: Icon, iconColor = 'text-orange-vivid', isLoading }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  change,
+  icon: Icon,
+  iconColor = "text-orange-vivid",
+  isLoading,
+}: StatCardProps) {
   if (isLoading) {
     return (
       <Card className="stats-card">
@@ -50,7 +63,7 @@ function StatCard({ title, value, change, icon: Icon, iconColor = 'text-orange-v
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -61,10 +74,12 @@ function StatCard({ title, value, change, icon: Icon, iconColor = 'text-orange-v
             <p className="text-sm text-gray-500 font-medium">{title}</p>
             <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
             {change !== undefined && (
-              <div className={cn(
-                'flex items-center gap-1 mt-2 text-sm',
-                change >= 0 ? 'text-green-600' : 'text-red-600'
-              )}>
+              <div
+                className={cn(
+                  "flex items-center gap-1 mt-2 text-sm",
+                  change >= 0 ? "text-green-600" : "text-red-600"
+                )}
+              >
                 {change >= 0 ? (
                   <TrendingUp className="h-4 w-4" />
                 ) : (
@@ -74,44 +89,50 @@ function StatCard({ title, value, change, icon: Icon, iconColor = 'text-orange-v
               </div>
             )}
           </div>
-          <div className={cn('p-3 rounded-full bg-gradient-soft-glow', iconColor)}>
+          <div
+            className={cn("p-3 rounded-full bg-gradient-soft-glow", iconColor)}
+          >
             <Icon className="h-6 w-6" />
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // Mock order status data - replace with actual data
 const orderStatusData = [
-  { name: 'Chờ xử lý', value: 45, color: '#FFB000' },
-  { name: 'Đang xử lý', value: 120, color: '#FF6A00' },
-  { name: 'Đang giao', value: 80, color: '#3B82F6' },
-  { name: 'Hoàn thành', value: 350, color: '#22C55E' },
-  { name: 'Đã hủy', value: 25, color: '#E65100' },
-]
+  { name: "Chờ xử lý", value: 45, color: "#FFB000" },
+  { name: "Đang xử lý", value: 120, color: "#FF6A00" },
+  { name: "Đang giao", value: 80, color: "#3B82F6" },
+  { name: "Hoàn thành", value: 350, color: "#22C55E" },
+  { name: "Đã hủy", value: 25, color: "#E65100" },
+];
 
 export default function DashboardPage() {
-  const [dateRange, setDateRange] = useState('7days')
+  const [dateRange, setDateRange] = useState("7days");
 
   // Calculate date range
-  const endDate = format(new Date(), 'yyyy-MM-dd')
+  const endDate = format(new Date(), "yyyy-MM-dd");
   const startDate = format(
-    dateRange === '7days'
+    dateRange === "7days"
       ? subDays(new Date(), 7)
-      : dateRange === '30days'
+      : dateRange === "30days"
       ? subDays(new Date(), 30)
       : subDays(new Date(), 90),
-    'yyyy-MM-dd'
-  )
+    "yyyy-MM-dd"
+  );
 
-  const dateParams = { start_date: startDate, end_date: endDate }
+  const dateParams = { start_date: startDate, end_date: endDate };
 
   // Fetch data
-  const { data: overview, isLoading: overviewLoading } = usePlatformOverview(dateParams)
-  const { data: revenueData, isLoading: revenueLoading } = useRevenueTimeseries(dateParams)
-  const { data: shopsData, isLoading: shopsLoading } = usePlatformShops({ limit: 10 })
+  const { data: overview, isLoading: overviewLoading } =
+    usePlatformOverview(dateParams);
+  const { data: revenueData, isLoading: revenueLoading } =
+    useRevenueTimeseries(dateParams);
+  const { data: shopsData, isLoading: shopsLoading } = usePlatformShops({
+    limit: 10,
+  });
 
   return (
     <div className="space-y-6 animate-in">
@@ -225,26 +246,50 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {[
-                { title: 'Đơn hàng mới #ORD-12345', time: '2 phút trước', type: 'order' },
-                { title: 'Shop "Fashion Store" đăng ký', time: '15 phút trước', type: 'shop' },
-                { title: 'Sản phẩm mới được duyệt', time: '1 giờ trước', type: 'product' },
-                { title: 'Thanh toán hoàn tất #TXN-67890', time: '2 giờ trước', type: 'payment' },
-                { title: 'Voucher SALE20 được sử dụng', time: '3 giờ trước', type: 'voucher' },
+                {
+                  title: "Đơn hàng mới #ORD-12345",
+                  time: "2 phút trước",
+                  type: "order",
+                },
+                {
+                  title: 'Shop "Fashion Store" đăng ký',
+                  time: "15 phút trước",
+                  type: "shop",
+                },
+                {
+                  title: "Sản phẩm mới được duyệt",
+                  time: "1 giờ trước",
+                  type: "product",
+                },
+                {
+                  title: "Thanh toán hoàn tất #TXN-67890",
+                  time: "2 giờ trước",
+                  type: "payment",
+                },
+                {
+                  title: "Voucher SALE20 được sử dụng",
+                  time: "3 giờ trước",
+                  type: "voucher",
+                },
               ].map((activity, index) => (
                 <div
                   key={index}
                   className="flex items-center gap-4 p-3 rounded-lg hover:bg-orange-apricot/30 transition-colors"
                 >
-                  <div className={cn(
-                    'w-2 h-2 rounded-full',
-                    activity.type === 'order' && 'bg-orange-vivid',
-                    activity.type === 'shop' && 'bg-blue-500',
-                    activity.type === 'product' && 'bg-green-500',
-                    activity.type === 'payment' && 'bg-orange-amber',
-                    activity.type === 'voucher' && 'bg-purple-500'
-                  )} />
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full",
+                      activity.type === "order" && "bg-orange-vivid",
+                      activity.type === "shop" && "bg-blue-500",
+                      activity.type === "product" && "bg-green-500",
+                      activity.type === "payment" && "bg-orange-amber",
+                      activity.type === "voucher" && "bg-purple-500"
+                    )}
+                  />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{activity.title}</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      {activity.title}
+                    </p>
                     <p className="text-xs text-gray-500">{activity.time}</p>
                   </div>
                 </div>
@@ -254,5 +299,5 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
