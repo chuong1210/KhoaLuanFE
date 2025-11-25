@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
 import {
   FolderTree,
   Plus,
@@ -100,11 +99,9 @@ function CategoryItem({
 
           {category.image ? (
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-orange-apricot/50">
-              <Image
+              <img
                 src={category.image}
                 alt={category.name}
-                width={40}
-                height={40}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -365,12 +362,12 @@ export default function CategoriesPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
-              <Select value={parentId} onValueChange={setParentId}>
+              <Select value={parentId} onValueChange={(val) => setParentId(val === 'none' ? '' : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
+                  <SelectItem value="none">Không có (danh mục gốc)</SelectItem>
                   {allCategories.map((cat) => (
                     <SelectItem key={cat.category_id} value={cat.category_id}>
                       {cat.name}
@@ -392,11 +389,10 @@ export default function CategoriesPage() {
                 />
                 {previewUrl && (
                   <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <Image
+                    <img
                       src={previewUrl}
                       alt="Preview"
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
                     />
                     <button
                       onClick={() => {
@@ -453,11 +449,9 @@ export default function CategoriesPage() {
               <div className="grid gap-2">
                 <Label>Ảnh hiện tại</Label>
                 <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                  <Image
+                  <img
                     src={selectedCategory.image}
                     alt={selectedCategory.name}
-                    width={128}
-                    height={128}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -476,11 +470,10 @@ export default function CategoriesPage() {
                 />
                 {previewUrl && (
                   <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <Image
+                    <img
                       src={previewUrl}
                       alt="Preview"
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
                     />
                     <button
                       onClick={() => {
