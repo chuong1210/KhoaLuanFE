@@ -3,21 +3,30 @@ export interface Category {
   key: string
   name: string
   path: string
-  image: string | null
-  child: Category[] | null
+  image: {
+    data: string
+    valid: boolean
+  }
+  child: {
+    data: Category[] | null
+    valid: boolean
+  }
   parent?: string | null
 }
 
 export interface CategoryResponse {
-  data: Category[]
+  categories: Category[]
 }
 
 export interface CreateCategoryData {
+  name: string
   parent?: string
-  media: File
+  media: File[]
 }
 
 export interface UpdateCategoryData {
+  name: string
   cate_id: string
-  media: File
+  parent?: string
+  media?: File[]
 }
