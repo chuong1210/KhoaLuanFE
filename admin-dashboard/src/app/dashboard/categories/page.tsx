@@ -53,6 +53,19 @@ import {
 import type { Category } from '@/features/categories/types'
 import { cn } from '@/lib/utils'
 
+// Helper function to format image URL
+const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null
+
+  // If image path starts with http:// or https://, use it directly
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+
+  // Otherwise, use media API endpoint
+  return `http://localhost:9001/v1/media/${imagePath}`
+}
+
 interface CategoryItemProps {
   category: Category
   level: number
@@ -72,7 +85,8 @@ function CategoryItem({
 }: CategoryItemProps) {
   const hasChildren = category.child?.valid && category.child.data && category.child.data.length > 0
   const isExpanded = expandedIds.has(category.category_id)
-  const imageUrl = category.image?.valid && category.image.data ? category.image.data : null
+  const imagePath = category.image?.valid && category.image.data ? category.image.data : null
+  const imageUrl = getImageUrl(imagePath)
 
   return (
     <div>
@@ -505,12 +519,12 @@ export default function CategoriesPage() {
                 </SelectContent>
               </Select>
             </div>
-            {selectedCategory?.image?.valid && selectedCategory.image.data && (
+            {selectedCategory?.image?.valid && selectedCategory.image.data && getImageUrl(selectedCategory.image.data) && (
               <div className="grid gap-2">
                 <Label>Ảnh hiện tại</Label>
                 <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
                   <Image
-                    src={selectedCategory.image.data}
+                    src={getImageUrl(selectedCategory.image.data)!}
                     alt={selectedCategory.name}
                     width={128}
                     height={128}
