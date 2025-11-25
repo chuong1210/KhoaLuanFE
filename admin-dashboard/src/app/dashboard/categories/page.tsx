@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import {
   FolderTree,
   Plus,
@@ -52,6 +53,19 @@ import {
 import type { Category } from '@/features/categories/types'
 import { cn } from '@/lib/utils'
 
+// Helper function to format image URL
+const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null
+
+  // If image path starts with http:// or https://, use it directly
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+
+  // Otherwise, use media API endpoint
+  return `http://localhost:9001/v1/media/${imagePath}`
+}
+
 interface CategoryItemProps {
   category: Category
   level: number
@@ -71,7 +85,8 @@ function CategoryItem({
 }: CategoryItemProps) {
   const hasChildren = category.child?.valid && category.child.data && category.child.data.length > 0
   const isExpanded = expandedIds.has(category.category_id)
-  const imageUrl = category.image?.valid && category.image.data ? category.image.data : null
+  const imagePath = category.image?.valid && category.image.data ? category.image.data : null
+  const imageUrl = getImageUrl(imagePath)
 
   return (
     <div>
@@ -100,14 +115,11 @@ function CategoryItem({
 
           {imageUrl ? (
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-orange-apricot/50">
-<<<<<<< HEAD
-              <img
-                src={category.image}
-=======
               <Image
                 src={imageUrl}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
                 alt={category.name}
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -394,12 +406,12 @@ export default function CategoriesPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
-              <Select value={parentId} onValueChange={(val) => setParentId(val === 'none' ? '' : val)}>
+              <Select value={parentId} onValueChange={setParentId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Không có (danh mục gốc)</SelectItem>
+                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
                   {allCategories.map((cat) => (
                     <SelectItem key={cat.category_id} value={cat.category_id}>
                       {cat.name}
@@ -420,27 +432,6 @@ export default function CategoriesPage() {
                   ref={fileInputRef}
                   className="cursor-pointer"
                 />
-<<<<<<< HEAD
-                {previewUrl && (
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null)
-                        setPreviewUrl('')
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = ''
-                        }
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-=======
                 {previewUrls.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {previewUrls.map((url, index) => (
@@ -462,7 +453,6 @@ export default function CategoriesPage() {
                         </button>
                       </div>
                     ))}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
                   </div>
                 )}
               </div>
@@ -529,18 +519,15 @@ export default function CategoriesPage() {
                 </SelectContent>
               </Select>
             </div>
-            {selectedCategory?.image?.valid && selectedCategory.image.data && (
+            {selectedCategory?.image?.valid && selectedCategory.image.data && getImageUrl(selectedCategory.image.data) && (
               <div className="grid gap-2">
                 <Label>Ảnh hiện tại</Label>
                 <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-<<<<<<< HEAD
-                  <img
-                    src={selectedCategory.image}
-=======
                   <Image
-                    src={selectedCategory.image.data}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
+                    src={getImageUrl(selectedCategory.image.data)!}
                     alt={selectedCategory.name}
+                    width={128}
+                    height={128}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -558,27 +545,6 @@ export default function CategoriesPage() {
                   ref={fileInputRef}
                   className="cursor-pointer"
                 />
-<<<<<<< HEAD
-                {previewUrl && (
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null)
-                        setPreviewUrl('')
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = ''
-                        }
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-=======
                 {previewUrls.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {previewUrls.map((url, index) => (
@@ -600,7 +566,6 @@ export default function CategoriesPage() {
                         </button>
                       </div>
                     ))}
->>>>>>> df0401fef1eee4babfa8736eca92700de5048a3d
                   </div>
                 )}
               </div>
