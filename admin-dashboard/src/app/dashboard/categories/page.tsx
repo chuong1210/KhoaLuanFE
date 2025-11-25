@@ -70,8 +70,9 @@ function CategoryItem({
   expandedIds,
   toggleExpand,
 }: CategoryItemProps) {
-  const hasChildren = category.child && category.child.length > 0
+  const hasChildren = category.child?.valid && category.child.data && category.child.data.length > 0
   const isExpanded = expandedIds.has(category.category_id)
+  const imageUrl = category.image?.valid && category.image.data ? category.image.data : null
 
   return (
     <div>
@@ -98,10 +99,10 @@ function CategoryItem({
             <div className="w-6" />
           )}
 
-          {category.image ? (
+          {imageUrl ? (
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-orange-apricot/50">
               <Image
-                src={category.image}
+                src={imageUrl}
                 alt={category.name}
                 width={40}
                 height={40}
@@ -121,7 +122,7 @@ function CategoryItem({
 
           {hasChildren && (
             <Badge variant="info" className="ml-2">
-              {category.child?.length} danh mục con
+              {category.child.data?.length} danh mục con
             </Badge>
           )}
         </div>
@@ -148,7 +149,7 @@ function CategoryItem({
 
       {hasChildren && isExpanded && (
         <div className="mt-1">
-          {category.child?.map((child) => (
+          {category.child.data?.map((child) => (
             <CategoryItem
               key={child.category_id}
               category={child}
@@ -173,9 +174,10 @@ export default function CategoriesPage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   // Form states
+  const [categoryName, setCategoryName] = useState<string>('')
   const [parentId, setParentId] = useState<string>('')
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: categories, isLoading } = useCategories()
@@ -196,30 +198,42 @@ export default function CategoriesPage() {
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
+    const files = e.target.files
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files)
+      setSelectedFiles(fileArray)
+      const urls = fileArray.map((file) => URL.createObjectURL(file))
+      setPreviewUrls(urls)
     }
   }
 
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    setPreviewUrls((prev) => {
+      URL.revokeObjectURL(prev[index])
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
   const resetForm = () => {
+    setCategoryName('')
     setParentId('')
-    setSelectedFile(null)
-    setPreviewUrl('')
+    setSelectedFiles([])
+    previewUrls.forEach((url) => URL.revokeObjectURL(url))
+    setPreviewUrls([])
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
   const handleCreate = () => {
-    if (!selectedFile) return
+    if (!categoryName.trim() || selectedFiles.length === 0) return
 
     createMutation.mutate(
       {
+        name: categoryName,
         parent: parentId || undefined,
-        media: selectedFile,
+        media: selectedFiles,
       },
       {
         onSuccess: () => {
@@ -232,16 +246,20 @@ export default function CategoriesPage() {
 
   const handleEdit = (category: Category) => {
     setSelectedCategory(category)
+    setCategoryName(category.name)
+    setParentId(category.parent || '')
     setEditDialogOpen(true)
   }
 
   const handleUpdate = () => {
-    if (!selectedCategory || !selectedFile) return
+    if (!selectedCategory || !categoryName.trim()) return
 
     updateMutation.mutate(
       {
         cate_id: selectedCategory.category_id,
-        media: selectedFile,
+        name: categoryName,
+        parent: parentId || undefined,
+        media: selectedFiles.length > 0 ? selectedFiles : undefined,
       },
       {
         onSuccess: () => {
@@ -273,8 +291,8 @@ export default function CategoriesPage() {
   const flattenCategories = (cats: Category[], result: Category[] = []): Category[] => {
     cats.forEach((cat) => {
       result.push(cat)
-      if (cat.child) {
-        flattenCategories(cat.child, result)
+      if (cat.child?.valid && cat.child.data) {
+        flattenCategories(cat.child.data, result)
       }
     })
     return result
@@ -352,17 +370,26 @@ export default function CategoriesPage() {
 
       {/* Create Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-orange-vivid" />
               Thêm danh mục mới
             </DialogTitle>
             <DialogDescription>
-              Tạo danh mục mới cho sản phẩm. Chọn ảnh và danh mục cha (nếu có).
+              Tạo danh mục mới cho sản phẩm. Nhập tên, chọn ảnh và danh mục cha (nếu có).
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Tên danh mục *</Label>
+              <Input
+                id="name"
+                placeholder="Nhập tên danh mục"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
               <Select value={parentId} onValueChange={setParentId}>
@@ -386,30 +413,32 @@ export default function CategoriesPage() {
                   id="media"
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleFileChange}
                   ref={fileInputRef}
                   className="cursor-pointer"
                 />
-                {previewUrl && (
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <Image
-                      src={previewUrl}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null)
-                        setPreviewUrl('')
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = ''
-                        }
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                {previewUrls.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {previewUrls.map((url, index) => (
+                      <div
+                        key={index}
+                        className="relative w-24 h-24 rounded-lg overflow-hidden border border-orange-peach/30"
+                      >
+                        <Image
+                          src={url}
+                          alt={`Preview ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="absolute top-1 right-1 p-1 bg-white rounded-full shadow hover:bg-gray-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -427,7 +456,7 @@ export default function CategoriesPage() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!selectedFile || createMutation.isPending}
+              disabled={!categoryName.trim() || selectedFiles.length === 0 || createMutation.isPending}
               className="bg-gradient-sunrise hover:opacity-90"
             >
               {createMutation.isPending ? 'Đang tạo...' : 'Tạo danh mục'}
@@ -438,23 +467,50 @@ export default function CategoriesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5 text-orange-vivid" />
               Cập nhật danh mục
             </DialogTitle>
             <DialogDescription>
-              Cập nhật ảnh cho danh mục "{selectedCategory?.name}"
+              Cập nhật thông tin cho danh mục "{selectedCategory?.name}"
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {selectedCategory?.image && (
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Tên danh mục *</Label>
+              <Input
+                id="edit-name"
+                placeholder="Nhập tên danh mục"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-parent">Danh mục cha (tùy chọn)</Label>
+              <Select value={parentId} onValueChange={setParentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn danh mục cha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
+                  {allCategories
+                    .filter((cat) => cat.category_id !== selectedCategory?.category_id)
+                    .map((cat) => (
+                      <SelectItem key={cat.category_id} value={cat.category_id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedCategory?.image?.valid && selectedCategory.image.data && (
               <div className="grid gap-2">
                 <Label>Ảnh hiện tại</Label>
                 <div className="w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
                   <Image
-                    src={selectedCategory.image}
+                    src={selectedCategory.image.data}
                     alt={selectedCategory.name}
                     width={128}
                     height={128}
@@ -464,36 +520,38 @@ export default function CategoriesPage() {
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="edit-media">Ảnh mới *</Label>
+              <Label htmlFor="edit-media">Ảnh mới (tùy chọn)</Label>
               <div className="flex flex-col gap-3">
                 <Input
                   id="edit-media"
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleFileChange}
                   ref={fileInputRef}
                   className="cursor-pointer"
                 />
-                {previewUrl && (
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-orange-peach/30">
-                    <Image
-                      src={previewUrl}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null)
-                        setPreviewUrl('')
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = ''
-                        }
-                      }}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                {previewUrls.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {previewUrls.map((url, index) => (
+                      <div
+                        key={index}
+                        className="relative w-24 h-24 rounded-lg overflow-hidden border border-orange-peach/30"
+                      >
+                        <Image
+                          src={url}
+                          alt={`Preview ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="absolute top-1 right-1 p-1 bg-white rounded-full shadow hover:bg-gray-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -512,7 +570,7 @@ export default function CategoriesPage() {
             </Button>
             <Button
               onClick={handleUpdate}
-              disabled={!selectedFile || updateMutation.isPending}
+              disabled={!categoryName.trim() || updateMutation.isPending}
               className="bg-gradient-sunrise hover:opacity-90"
             >
               {updateMutation.isPending ? 'Đang cập nhật...' : 'Cập nhật'}
@@ -528,9 +586,9 @@ export default function CategoriesPage() {
             <AlertDialogTitle>Xác nhận xóa danh mục</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn có chắc chắn muốn xóa danh mục "{selectedCategory?.name}"?
-              {selectedCategory?.child && selectedCategory.child.length > 0 && (
+              {selectedCategory?.child?.valid && selectedCategory.child.data && selectedCategory.child.data.length > 0 && (
                 <span className="block mt-2 text-red-500 font-medium">
-                  Lưu ý: Danh mục này có {selectedCategory.child.length} danh mục con.
+                  Lưu ý: Danh mục này có {selectedCategory.child.data.length} danh mục con.
                   Việc xóa có thể ảnh hưởng đến các danh mục con.
                 </span>
               )}
