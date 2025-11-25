@@ -5,18 +5,34 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { shopService } from "@/services/shop-service";
 import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Mail, Phone, MapPin, FileText, AlertCircle, CheckCircle,
-  Edit, Wallet, Calendar, Building2, UserCheck, ShieldCheck,
-  Store, Globe, CreditCard, Clock, Image as ImageIcon
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Edit,
+  Wallet,
+  Calendar,
+  Building2,
+  UserCheck,
+  ShieldCheck,
+  Store,
+  Globe,
+  CreditCard,
+  Clock,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,7 +43,11 @@ export default function ShopManagementPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: currentShop, isLoading, error } = useQuery({
+  const {
+    data: currentShop,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["currentShop"],
     queryFn: shopService.getCurrentShop,
   });
@@ -36,7 +56,7 @@ export default function ShopManagementPage() {
   useEffect(() => {
     if (!isLoading && !currentShop && !error) {
       // Consider handling specific error codes or null data appropriately
-      // router.push("/dashboard/shop/register"); 
+      // router.push("/dashboard/shop/register");
     }
   }, [currentShop, isLoading, error, router]);
 
@@ -62,11 +82,17 @@ export default function ShopManagementPage() {
   if (error) {
     return (
       <div className="p-10 flex justify-center">
-        <Alert variant="destructive" className="max-w-lg shadow-lg border-red-200 bg-red-50">
+        <Alert
+          variant="destructive"
+          className="max-w-lg shadow-lg border-red-200 bg-red-50"
+        >
           <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="text-lg font-bold">Không thể tải dữ liệu</AlertTitle>
+          <AlertTitle className="text-lg font-bold">
+            Không thể tải dữ liệu
+          </AlertTitle>
           <AlertDescription className="mt-2">
-            Đã xảy ra lỗi khi tải thông tin cửa hàng. Vui lòng kiểm tra kết nối hoặc thử lại sau.
+            Đã xảy ra lỗi khi tải thông tin cửa hàng. Vui lòng kiểm tra kết nối
+            hoặc thử lại sau.
           </AlertDescription>
           <Button
             onClick={() => window.location.reload()}
@@ -84,31 +110,39 @@ export default function ShopManagementPage() {
 
   // --- HELPERS ---
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("vi-VN", { year: 'numeric', month: 'long', day: 'numeric' });
+    new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
 
   return (
     <div className="min-h-screen pb-12 bg-[#FFF0E0]/30">
       {/* === 1. HERO SECTION === */}
       <div className="relative bg-white shadow-sm border-b border-[#FFB38A]/30">
-
         {/* Banner Image */}
-        <div className="h-64 w-full relative bg-gradient-to-r from-[#FF8A33] to-[#FFB38A] overflow-hidden">
+        <div className="h-64 w-full relative bg-linear-to-r from-[#FF8A33] to-[#FFB38A] overflow-hidden">
           {currentShop.shopBanner ? (
             <img
               src={`${MEDIA_BASE_URL}/${currentShop.shopBanner}`}
               alt="Cover"
               className="w-full h-full object-cover opacity-90"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center opacity-20">
               <ImageIcon className="w-24 h-24 text-white" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
 
           {/* Edit Button (Absolute Top Right) */}
           <Button
@@ -122,13 +156,16 @@ export default function ShopManagementPage() {
         {/* Shop Profile Header */}
         <div className="max-w-7xl mx-auto px-6 pb-6">
           <div className="relative -mt-16 flex flex-col md:flex-row md:items-end gap-6 mb-2">
-
             {/* Avatar */}
             <div className="relative group">
               <div className="h-36 w-36 rounded-2xl border-4 border-white shadow-xl bg-white overflow-hidden p-1">
                 <Avatar className="h-full w-full rounded-xl">
                   <AvatarImage
-                    src={currentShop.shopLogo ? `${MEDIA_BASE_URL}/${currentShop.shopLogo}` : ""}
+                    src={
+                      currentShop.shopLogo
+                        ? `${MEDIA_BASE_URL}/${currentShop.shopLogo}`
+                        : ""
+                    }
                     className="object-cover"
                   />
                   <AvatarFallback className="bg-orange-100 text-[#E65100] text-4xl font-bold">
@@ -136,7 +173,10 @@ export default function ShopManagementPage() {
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <div className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-green-500 border-2 border-white shadow-sm" title="Online" />
+              <div
+                className="absolute bottom-2 right-2 h-4 w-4 rounded-full bg-green-500 border-2 border-white shadow-sm"
+                title="Online"
+              />
             </div>
 
             {/* Name & Status */}
@@ -147,16 +187,21 @@ export default function ShopManagementPage() {
                 </h1>
                 {currentShop.shopStatus ? (
                   <Badge className="bg-green-500 hover:bg-green-600 text-white border-0 px-3 py-1 text-sm h-fit w-fit mx-auto md:mx-0">
-                    <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Đang hoạt động
+                    <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Đang hoạt
+                    động
                   </Badge>
                 ) : (
-                  <Badge variant="destructive" className="px-3 py-1 text-sm h-fit w-fit mx-auto md:mx-0">
+                  <Badge
+                    variant="destructive"
+                    className="px-3 py-1 text-sm h-fit w-fit mx-auto md:mx-0"
+                  >
                     <AlertCircle className="mr-1.5 h-3.5 w-3.5" /> Tạm dừng
                   </Badge>
                 )}
               </div>
               <p className="text-gray-600 max-w-2xl text-base">
-                {currentShop.shopDescription || "Chưa có mô tả giới thiệu cho cửa hàng."}
+                {currentShop.shopDescription ||
+                  "Chưa có mô tả giới thiệu cho cửa hàng."}
               </p>
             </div>
 
@@ -165,7 +210,10 @@ export default function ShopManagementPage() {
               <Button
                 onClick={() => router.push("/dashboard/shop/edit")}
                 className="h-11 px-6 shadow-lg hover:shadow-xl transition-all font-semibold text-white"
-                style={{ background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)" }}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                }}
               >
                 <Edit className="mr-2 h-4 w-4" /> Cập nhật thông tin
               </Button>
@@ -176,14 +224,17 @@ export default function ShopManagementPage() {
 
       {/* === 2. MAIN CONTENT === */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-l-4 border-l-[#FF6A00] shadow-sm hover:shadow-md transition-shadow bg-white">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Doanh thu ví</p>
-                <h3 className="text-2xl font-bold text-[#E65100]">{formatCurrency(currentShop.walletAmount)}</h3>
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Doanh thu ví
+                </p>
+                <h3 className="text-2xl font-bold text-[#E65100]">
+                  {formatCurrency(currentShop.walletAmount)}
+                </h3>
               </div>
               <div className="h-12 w-12 rounded-full bg-[#FFF0E0] flex items-center justify-center">
                 <Wallet className="h-6 w-6 text-[#FF6A00]" />
@@ -194,8 +245,12 @@ export default function ShopManagementPage() {
           <Card className="border-l-4 border-l-[#FF8A33] shadow-sm hover:shadow-md transition-shadow bg-white">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Người theo dõi</p>
-                <h3 className="text-2xl font-bold text-[#E65100]">{currentShop.followerCount}</h3>
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Người theo dõi
+                </p>
+                <h3 className="text-2xl font-bold text-[#E65100]">
+                  {currentShop.followerCount}
+                </h3>
               </div>
               <div className="h-12 w-12 rounded-full bg-[#FFF0E0] flex items-center justify-center">
                 <UserCheck className="h-6 w-6 text-[#FF8A33]" />
@@ -206,8 +261,12 @@ export default function ShopManagementPage() {
           <Card className="border-l-4 border-l-[#FFB38A] shadow-sm hover:shadow-md transition-shadow bg-white">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Ngày tham gia</p>
-                <h3 className="text-lg font-bold text-gray-800">{formatDate(currentShop.createdDate)}</h3>
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Ngày tham gia
+                </p>
+                <h3 className="text-lg font-bold text-gray-800">
+                  {formatDate(currentShop.createdDate)}
+                </h3>
               </div>
               <div className="h-12 w-12 rounded-full bg-[#FFF0E0] flex items-center justify-center">
                 <Calendar className="h-6 w-6 text-[#FFB38A]" />
@@ -218,9 +277,13 @@ export default function ShopManagementPage() {
           <Card className="border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow bg-white">
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Trạng thái Thuế</p>
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Trạng thái Thuế
+                </p>
                 <h3 className="text-lg font-bold text-green-600">
-                  {currentShop.taxInfo?.taxActiveStatus ? "Đã xác thực" : "Chưa xác thực"}
+                  {currentShop.taxInfo?.taxActiveStatus
+                    ? "Đã xác thực"
+                    : "Chưa xác thực"}
                 </h3>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
@@ -231,7 +294,11 @@ export default function ShopManagementPage() {
         </div>
 
         {/* Detailed Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="bg-white border border-[#FFB38A]/30 p-1 h-auto w-full md:w-auto flex-wrap justify-start shadow-sm">
             <TabsTrigger
               value="overview"
@@ -264,7 +331,9 @@ export default function ShopManagementPage() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Mô tả chi tiết</label>
+                    <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                      Mô tả chi tiết
+                    </label>
                     <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-100 text-gray-700 leading-relaxed">
                       {currentShop.shopDescription || "Chưa có nội dung mô tả."}
                     </div>
@@ -276,7 +345,9 @@ export default function ShopManagementPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Mã cửa hàng</p>
-                        <p className="font-mono font-medium text-gray-900">{currentShop.id}</p>
+                        <p className="font-mono font-medium text-gray-900">
+                          {currentShop.id}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -284,9 +355,13 @@ export default function ShopManagementPage() {
                         <Clock className="h-5 w-5 text-[#FF6A00]" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Cập nhật lần cuối</p>
+                        <p className="text-sm text-gray-500">
+                          Cập nhật lần cuối
+                        </p>
                         <p className="font-medium text-gray-900">
-                          {currentShop.modifiedDate ? formatDate(currentShop.modifiedDate) : "Chưa cập nhật"}
+                          {currentShop.modifiedDate
+                            ? formatDate(currentShop.modifiedDate)
+                            : "Chưa cập nhật"}
                         </p>
                       </div>
                     </div>
@@ -305,9 +380,15 @@ export default function ShopManagementPage() {
                     <Mail className="h-6 w-6 text-[#FF6A00] group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-1">Email liên hệ</h4>
-                    <p className="text-gray-600 mb-2">Địa chỉ email chính để nhận thông báo và đơn hàng.</p>
-                    <p className="text-[#E65100] font-semibold text-lg">{currentShop.shopEmail}</p>
+                    <h4 className="text-lg font-bold text-gray-900 mb-1">
+                      Email liên hệ
+                    </h4>
+                    <p className="text-gray-600 mb-2">
+                      Địa chỉ email chính để nhận thông báo và đơn hàng.
+                    </p>
+                    <p className="text-[#E65100] font-semibold text-lg">
+                      {currentShop.shopEmail}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -318,9 +399,15 @@ export default function ShopManagementPage() {
                     <Phone className="h-6 w-6 text-[#FF6A00] group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-1">Số điện thoại</h4>
-                    <p className="text-gray-600 mb-2">Hotline hỗ trợ khách hàng.</p>
-                    <p className="text-[#E65100] font-semibold text-lg">{currentShop.shopPhone}</p>
+                    <h4 className="text-lg font-bold text-gray-900 mb-1">
+                      Số điện thoại
+                    </h4>
+                    <p className="text-gray-600 mb-2">
+                      Hotline hỗ trợ khách hàng.
+                    </p>
+                    <p className="text-[#E65100] font-semibold text-lg">
+                      {currentShop.shopPhone}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -331,8 +418,12 @@ export default function ShopManagementPage() {
                     <MapPin className="h-6 w-6 text-[#FF6A00] group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-1">Địa chỉ kho hàng</h4>
-                    <p className="text-gray-600 mb-2">Địa chỉ lấy hàng và trả hàng mặc định.</p>
+                    <h4 className="text-lg font-bold text-gray-900 mb-1">
+                      Địa chỉ kho hàng
+                    </h4>
+                    <p className="text-gray-600 mb-2">
+                      Địa chỉ lấy hàng và trả hàng mặc định.
+                    </p>
                     <p className="text-gray-900 font-medium text-lg leading-relaxed">
                       {currentShop.shopAddress}
                     </p>
@@ -355,14 +446,24 @@ export default function ShopManagementPage() {
                   </CardHeader>
                   <CardContent className="grid md:grid-cols-2 gap-8 pt-4">
                     <div>
-                      <label className="text-sm text-gray-500">Tên đăng ký kinh doanh</label>
-                      <p className="text-xl font-bold text-gray-900 mt-1">{currentShop.taxInfo.taxNationalName}</p>
+                      <label className="text-sm text-gray-500">
+                        Tên đăng ký kinh doanh
+                      </label>
+                      <p className="text-xl font-bold text-gray-900 mt-1">
+                        {currentShop.taxInfo.taxNationalName}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-sm text-gray-500">Loại hình kinh doanh</label>
+                      <label className="text-sm text-gray-500">
+                        Loại hình kinh doanh
+                      </label>
                       <div className="mt-1 flex items-center gap-2">
-                        <Badge variant="outline" className="border-[#FF8A33] text-[#E65100] bg-orange-50">
-                          {currentShop.taxInfo.taxBusinessType || "Cá nhân kinh doanh"}
+                        <Badge
+                          variant="outline"
+                          className="border-[#FF8A33] text-[#E65100] bg-orange-50"
+                        >
+                          {currentShop.taxInfo.taxBusinessType ||
+                            "Cá nhân kinh doanh"}
                         </Badge>
                       </div>
                     </div>
@@ -374,7 +475,9 @@ export default function ShopManagementPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <CreditCard className="h-5 w-5 text-[#FF6A00]" />
-                      <span className="font-semibold text-gray-700">Mã số thuế</span>
+                      <span className="font-semibold text-gray-700">
+                        Mã số thuế
+                      </span>
                     </div>
                     <p className="text-2xl font-mono font-bold text-[#E65100] tracking-wider">
                       {currentShop.taxInfo.taxCode}
@@ -387,7 +490,9 @@ export default function ShopManagementPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <UserCheck className="h-5 w-5 text-[#FF6A00]" />
-                      <span className="font-semibold text-gray-700">CCCD/CMND chủ shop</span>
+                      <span className="font-semibold text-gray-700">
+                        CCCD/CMND chủ shop
+                      </span>
                     </div>
                     <p className="text-xl font-mono font-bold text-gray-800 tracking-wide">
                       {currentShop.shopPersonalIdentifyId || "---"}
@@ -400,7 +505,9 @@ export default function ShopManagementPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <ShieldCheck className="h-5 w-5 text-[#FF6A00]" />
-                      <span className="font-semibold text-gray-700">Trạng thái pháp lý</span>
+                      <span className="font-semibold text-gray-700">
+                        Trạng thái pháp lý
+                      </span>
                     </div>
                     {currentShop.taxInfo.taxActiveStatus ? (
                       <div className="flex items-center text-green-600 font-bold text-lg">
@@ -419,7 +526,10 @@ export default function ShopManagementPage() {
                 <AlertCircle className="h-5 w-5" />
                 <AlertTitle>Chưa cập nhật thông tin thuế</AlertTitle>
                 <AlertDescription className="mt-2 flex flex-col gap-4">
-                  <p>Việc cập nhật thông tin thuế là bắt buộc để kích hoạt các tính năng thanh toán và vận chuyển nâng cao.</p>
+                  <p>
+                    Việc cập nhật thông tin thuế là bắt buộc để kích hoạt các
+                    tính năng thanh toán và vận chuyển nâng cao.
+                  </p>
                   <Button
                     size="sm"
                     className="w-fit bg-[#FF6A00] hover:bg-[#E65100] text-white border-0"
@@ -432,7 +542,6 @@ export default function ShopManagementPage() {
             )}
           </TabsContent>
         </Tabs>
-
       </div>
     </div>
   );
