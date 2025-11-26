@@ -29,9 +29,9 @@ const menuItems = [
     href: '/dashboard',
   },
   {
-    title: 'Sản phẩm',
-    icon: Package,
-    href: '/dashboard/products',
+    title: 'Cửa hàng',
+    icon: Store,
+    href: '/dashboard/shops',
   },
   {
     title: 'Danh mục',
@@ -42,11 +42,6 @@ const menuItems = [
     title: 'Đơn hàng',
     icon: ShoppingCart,
     href: '/dashboard/orders',
-  },
-  {
-    title: 'Cửa hàng',
-    icon: Store,
-    href: '/dashboard/shops',
   },
   {
     title: 'Vouchers',

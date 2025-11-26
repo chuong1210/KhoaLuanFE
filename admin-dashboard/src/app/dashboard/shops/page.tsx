@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   Search,
   Store,
@@ -12,6 +13,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Package,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -227,14 +229,30 @@ export default function ShopsPage() {
                         <TableCell>{formatDate(shop.createdDate)}</TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleViewShop(shop)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewShop(shop)}
+                              title="Xem chi tiết"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            <Link href={`/dashboard/shops/${shop.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Xem sản phẩm"
+                                className="text-orange-vivid hover:text-orange-deep"
+                              >
+                                <Package className="h-4 w-4" />
+                              </Button>
+                            </Link>
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteShop(shop.id)}
-                              className="text-orange-deep"
+                              className="text-orange-deep hover:text-red-600"
+                              title="Xóa shop"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
