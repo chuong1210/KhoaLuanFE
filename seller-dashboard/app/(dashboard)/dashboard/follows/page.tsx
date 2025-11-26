@@ -279,7 +279,7 @@ export default function FollowersPage() {
                         <div className="space-y-3">
                           {follower.userEmail && (
                             <div className="flex items-center gap-3 text-sm text-gray-600 bg-[#FFF0E0]/50 rounded-lg p-3">
-                              <Mail className="h-4 w-4 text-[#FF8A33] flex-shrink-0" />
+                              <Mail className="h-4 w-4 text-[#FF8A33] shrink-0" />
                               <span className="truncate">
                                 {follower.userEmail}
                               </span>
@@ -287,7 +287,7 @@ export default function FollowersPage() {
                           )}
 
                           <div className="flex items-center gap-3 text-sm text-gray-600 bg-[#FFF0E0]/50 rounded-lg p-3">
-                            <Calendar className="h-4 w-4 text-[#FFB000] flex-shrink-0" />
+                            <Calendar className="h-4 w-4 text-[#FFB000] shrink-0" />
                             <span>{formatDate(follower.createdAt)}</span>
                           </div>
                         </div>

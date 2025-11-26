@@ -1,26 +1,23 @@
+// src/store/slices/authSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { jwtDecode } from 'jwt-decode'
 import { authApi } from '@/lib/api'
+import { cookies } from '@/lib/cookies' // Import file cookie vừa tạo
 import type { AuthState, DecodedToken, LoginRequest, LoginResponse, User } from '@/types/auth'
 
 const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Mặc định là true để chờ check cookie lần đầu
   error: null,
 }
 
-// Helper function to decode token and extract user info
+// Helper decode (giữ nguyên logic cũ của bạn)
 const decodeTokenToUser = (token: string): User | null => {
   try {
     const decoded = jwtDecode<DecodedToken>(token)
-
-    // Check if token is expired
-    if (decoded.exp * 1000 < Date.now()) {
-      return null
-    }
-
+    if (decoded.exp * 1000 < Date.now()) return null
     return {
       userId: decoded.userId,
       username: decoded.sub,
@@ -32,7 +29,7 @@ const decodeTokenToUser = (token: string): User | null => {
   }
 }
 
-// Async thunk for login
+// 1. Login Async: Lưu vào Cookie
 export const loginAsync = createAsyncThunk(
   'auth/login',
   async (credentials: LoginRequest, { rejectWithValue }) => {
@@ -43,59 +40,42 @@ export const loginAsync = createAsyncThunk(
         const token = response.data.result.token
         const user = decodeTokenToUser(token)
 
-        if (!user) {
-          return rejectWithValue('Token không hợp lệ hoặc đã hết hạn')
+        if (!user || (user.role !== 'ROLE_ADMIN' && user.role !== 'ROLE_SELLER')) {
+          return rejectWithValue('Không có quyền truy cập')
         }
 
-        // Check if user has admin or seller role
-        if (user.role !== 'ROLE_ADMIN' && user.role !== 'ROLE_SELLER') {
-          return rejectWithValue('Bạn không có quyền truy cập vào trang quản trị')
-        }
-
-        // Save token to localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('token', token)
-        }
+        // THAY ĐỔI Ở ĐÂY: Lưu vào Cookie thay vì LocalStorage
+        cookies.set('token', token, 7) 
+        console.log(cookies.get('token'))
 
         return { token, user }
       }
-
       return rejectWithValue('Đăng nhập thất bại')
-    } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { message?: string } } }
-        return rejectWithValue(axiosError.response?.data?.message || 'Đăng nhập thất bại')
-      }
-      return rejectWithValue('Đăng nhập thất bại')
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Lỗi hệ thống')
     }
   }
 )
 
-// Async thunk for initializing auth from localStorage
+// 2. Initialize: Đọc từ Cookie
 export const initializeAuth = createAsyncThunk(
   'auth/initialize',
   async (_, { rejectWithValue }) => {
     try {
-      if (typeof window === 'undefined') {
-        return rejectWithValue('Not in browser')
-      }
+      // THAY ĐỔI Ở ĐÂY: Đọc từ Cookie
+      const token = cookies.get('token')
 
-      const token = localStorage.getItem('token')
-
-      if (!token) {
-        return rejectWithValue('No token found')
-      }
+      if (!token) return rejectWithValue('No token')
 
       const user = decodeTokenToUser(token)
-
       if (!user) {
-        localStorage.removeItem('token')
-        return rejectWithValue('Token expired or invalid')
+        cookies.remove('token') // Token rác thì xóa đi
+        return rejectWithValue('Invalid token')
       }
 
       return { token, user }
     } catch {
-      return rejectWithValue('Failed to initialize auth')
+      return rejectWithValue('Failed')
     }
   }
 )
@@ -109,27 +89,22 @@ const authSlice = createSlice({
       state.token = null
       state.isAuthenticated = false
       state.error = null
-
+      // THAY ĐỔI: Xóa Cookie
+      cookies.remove('token')
+      
+      // Force reload để middleware đá về login ngay lập tức hoặc dùng router.push
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token')
+        window.location.href = '/auth/login' 
       }
     },
     clearError: (state) => {
       state.error = null
     },
-    setCredentials: (state, action: PayloadAction<{ token: string; user: User }>) => {
-      state.token = action.payload.token
-      state.user = action.payload.user
-      state.isAuthenticated = true
-    },
   },
   extraReducers: (builder) => {
     builder
       // Login
-      .addCase(loginAsync.pending, (state) => {
-        state.isLoading = true
-        state.error = null
-      })
+      .addCase(loginAsync.pending, (state) => { state.isLoading = true; state.error = null })
       .addCase(loginAsync.fulfilled, (state, action) => {
         state.isLoading = false
         state.isAuthenticated = true
@@ -141,9 +116,6 @@ const authSlice = createSlice({
         state.error = action.payload as string
       })
       // Initialize
-      .addCase(initializeAuth.pending, (state) => {
-        state.isLoading = true
-      })
       .addCase(initializeAuth.fulfilled, (state, action) => {
         state.isLoading = false
         state.isAuthenticated = true
@@ -153,9 +125,11 @@ const authSlice = createSlice({
       .addCase(initializeAuth.rejected, (state) => {
         state.isLoading = false
         state.isAuthenticated = false
+        state.user = null
+        state.token = null
       })
   },
 })
 
-export const { logout, clearError, setCredentials } = authSlice.actions
+export const { logout, clearError } = authSlice.actions
 export default authSlice.reducer

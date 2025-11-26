@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   Search,
   Store,
@@ -14,21 +14,21 @@ import {
   Phone,
   MapPin,
   Package,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Pagination } from '@/components/ui/pagination'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/ui/pagination";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,68 +36,80 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { useShops, usePendingShops, useDeleteShop, useApproveShop } from '@/features/shops/hooks/useShops'
-import type { Shop, ShopSearchParams, PendingShop } from '@/features/shops/types'
-import { formatDate, cn } from '@/lib/utils'
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  useShops,
+  usePendingShops,
+  useDeleteShop,
+  useApproveShop,
+} from "@/features/shops/hooks/useShops";
+import { transformImageUrl } from "@/features/shops/services/shopsApi";
+import type {
+  Shop,
+  ShopSearchParams,
+  PendingShop,
+} from "@/features/shops/types/index";
+import { formatDate } from "@/lib/utils";
 
 export default function ShopsPage() {
-  const [activeTab, setActiveTab] = useState('all')
+  const [activeTab, setActiveTab] = useState("all");
   const [searchParams, setSearchParams] = useState<ShopSearchParams>({
-    PageNumber: 1,
-    PageSize: 10,
-  })
-  const [selectedShop, setSelectedShop] = useState<Shop | PendingShop | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [isApprovalOpen, setIsApprovalOpen] = useState(false)
-  const [feedback, setFeedback] = useState('')
+    pagenumber: 1,
+    pagesize: 10,
+  });
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const [selectedPendingShop, setSelectedPendingShop] =
+    useState<PendingShop | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isApprovalOpen, setIsApprovalOpen] = useState(false);
+  const [feedback, setFeedback] = useState("");
 
-  const { data: shopsData, isLoading: shopsLoading } = useShops(searchParams)
+  const { data: shopsData, isLoading: shopsLoading } = useShops(searchParams);
   const { data: pendingData, isLoading: pendingLoading } = usePendingShops({
     pageNumber: 1,
     pageSize: 20,
-  })
-  const deleteShop = useDeleteShop()
-  const approveShop = useApproveShop()
+  });
+  const deleteShop = useDeleteShop();
+  const approveShop = useApproveShop();
 
   const handlePageChange = (page: number) => {
-    setSearchParams((prev) => ({ ...prev, PageNumber: page }))
-  }
+    setSearchParams((prev) => ({ ...prev, pagenumber: page }));
+  };
 
-  const handleViewShop = (shop: Shop | PendingShop) => {
-    setSelectedShop(shop)
-    setIsDetailOpen(true)
-  }
+  const handleViewShop = (shop: Shop) => {
+    setSelectedShop(shop);
+    setIsDetailOpen(true);
+  };
 
   const handleApprovalDialog = (shop: PendingShop) => {
-    setSelectedShop(shop)
-    setIsApprovalOpen(true)
-    setFeedback('')
-  }
+    setSelectedPendingShop(shop);
+    setIsApprovalOpen(true);
+    setFeedback("");
+  };
 
   const handleApprove = (isApproved: boolean) => {
-    if (selectedShop && 'shopId' in selectedShop) {
+    if (selectedPendingShop) {
       approveShop.mutate({
-        shopId: selectedShop.shopId,
-        data: { isApproved, feedback },
-      })
-      setIsApprovalOpen(false)
+        shopId: selectedPendingShop.shopId,
+        data: { IsApproved: isApproved, Feedback: feedback },
+      });
+      setIsApprovalOpen(false);
     }
-  }
+  };
 
   const handleDeleteShop = (shopId: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa shop này?')) {
-      deleteShop.mutate(shopId)
+    if (confirm("Bạn có chắc chắn muốn xóa shop này?")) {
+      deleteShop.mutate(shopId);
     }
-  }
+  };
 
   return (
     <div className="space-y-6 animate-in">
@@ -144,7 +156,8 @@ export default function ShopsPage() {
                     onChange={(e) =>
                       setSearchParams((prev) => ({
                         ...prev,
-                        SearchTerm: e.target.value || undefined,
+                        searchterm: e.target.value || undefined,
+                        pagenumber: 1,
                       }))
                     }
                   />
@@ -153,7 +166,8 @@ export default function ShopsPage() {
                   onValueChange={(value) =>
                     setSearchParams((prev) => ({
                       ...prev,
-                      Status: value === 'all' ? undefined : value === 'active',
+                      status: value === "all" ? undefined : value === "active",
+                      pagenumber: 1,
                     }))
                   }
                 >
@@ -195,13 +209,27 @@ export default function ShopsPage() {
                   {shopsLoading ? (
                     Array.from({ length: 5 }).map((_, index) => (
                       <TableRow key={index}>
-                        <TableCell><Skeleton className="h-10 w-10 rounded-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                        <TableCell><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
+                        <TableCell>
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-32" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-40" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-6 w-20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-8 w-24 mx-auto" />
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : shopsData?.result && shopsData.result.length > 0 ? (
@@ -210,10 +238,19 @@ export default function ShopsPage() {
                         <TableCell>
                           <div className="relative h-10 w-10 rounded-full overflow-hidden bg-orange-apricot">
                             {shop.shopLogo ? (
-                              <Image src={shop.shopLogo} alt={shop.shopName} fill className="object-cover" />
-                            ) : (
-                              <Store className="h-full w-full p-2 text-orange-vivid" />
-                            )}
+                              <img
+                                src={transformImageUrl(shop.shopLogo)}
+                                alt={shop.shopName}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  e.currentTarget.nextElementSibling?.classList.remove(
+                                    "hidden"
+                                  );
+                                }}
+                              />
+                            ) : null}
+                            <Store className="h-full w-full p-2 text-orange-vivid" />
                           </div>
                         </TableCell>
                         <TableCell>
@@ -222,8 +259,10 @@ export default function ShopsPage() {
                         <TableCell>{shop.shopEmail}</TableCell>
                         <TableCell>{shop.shopPhone}</TableCell>
                         <TableCell>
-                          <Badge variant={shop.shopStatus ? 'success' : 'error'}>
-                            {shop.shopStatus ? 'Hoạt động' : 'Tạm dừng'}
+                          <Badge
+                            variant={shop.shopStatus ? "success" : "error"}
+                          >
+                            {shop.shopStatus ? "Hoạt động" : "Tạm dừng"}
                           </Badge>
                         </TableCell>
                         <TableCell>{formatDate(shop.createdDate)}</TableCell>
@@ -300,7 +339,7 @@ export default function ShopsPage() {
                     <TableHead>Tên Shop</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Điện thoại</TableHead>
-                    <TableHead>Mã số thuế</TableHead>
+                    <TableHead>Sản phẩm chờ duyệt</TableHead>
                     <TableHead>Ngày đăng ký</TableHead>
                     <TableHead className="text-center">Thao tác</TableHead>
                   </TableRow>
@@ -309,21 +348,39 @@ export default function ShopsPage() {
                   {pendingLoading ? (
                     Array.from({ length: 3 }).map((_, index) => (
                       <TableRow key={index}>
-                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                        <TableCell><Skeleton className="h-8 w-32 mx-auto" /></TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-32" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-40" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-8 w-32 mx-auto" />
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : pendingData?.result && pendingData.result.length > 0 ? (
                     pendingData.result.map((shop) => (
                       <TableRow key={shop.shopId} className="table-row-hover">
-                        <TableCell className="font-medium">{shop.shopName}</TableCell>
+                        <TableCell className="font-medium">
+                          {shop.shopName}
+                        </TableCell>
                         <TableCell>{shop.shopEmail}</TableCell>
                         <TableCell>{shop.shopPhone}</TableCell>
-                        <TableCell>{shop.taxInfo?.taxCode || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="warning">
+                            {shop.pendingProductCount}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{formatDate(shop.createdDate)}</TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
@@ -351,7 +408,9 @@ export default function ShopsPage() {
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8">
                         <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                        <p className="text-gray-500">Không có shop nào chờ duyệt</p>
+                        <p className="text-gray-500">
+                          Không có shop nào chờ duyệt
+                        </p>
                       </TableCell>
                     </TableRow>
                   )}
@@ -368,41 +427,73 @@ export default function ShopsPage() {
           <DialogHeader>
             <DialogTitle>Chi tiết cửa hàng</DialogTitle>
           </DialogHeader>
-          {selectedShop && 'shopName' in selectedShop && (
+          {selectedShop && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 rounded-full overflow-hidden bg-orange-apricot">
-                  {(selectedShop as Shop).shopLogo ? (
-                    <Image src={(selectedShop as Shop).shopLogo} alt={(selectedShop as Shop).shopName} fill className="object-cover" />
-                  ) : (
-                    <Store className="h-full w-full p-4 text-orange-vivid" />
-                  )}
+                  {selectedShop.shopLogo ? (
+                    <img
+                      src={transformImageUrl(selectedShop.shopLogo)}
+                      alt={selectedShop.shopName}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          "hidden"
+                        );
+                      }}
+                    />
+                  ) : null}
+                  <Store className="h-full w-full p-4 text-orange-vivid" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">{(selectedShop as Shop).shopName}</h3>
-                  <Badge variant={(selectedShop as Shop).shopStatus ? 'success' : 'error'}>
-                    {(selectedShop as Shop).shopStatus ? 'Hoạt động' : 'Tạm dừng'}
+                  <h3 className="font-bold text-lg">{selectedShop.shopName}</h3>
+                  <Badge
+                    variant={selectedShop.shopStatus ? "success" : "error"}
+                  >
+                    {selectedShop.shopStatus ? "Hoạt động" : "Tạm dừng"}
                   </Badge>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-orange-vivid" />
-                  <span>{(selectedShop as Shop).shopEmail}</span>
+                  <span>{selectedShop.shopEmail}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-orange-vivid" />
-                  <span>{(selectedShop as Shop).shopPhone}</span>
+                  <span>{selectedShop.shopPhone}</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-orange-vivid mt-0.5" />
-                  <span>{(selectedShop as Shop).shopAddress}</span>
+                  <span>{selectedShop.shopAddress}</span>
                 </div>
               </div>
-              {(selectedShop as Shop).shopDescription && (
+              {selectedShop.shopDescription && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Mô tả:</p>
-                  <p className="text-sm">{(selectedShop as Shop).shopDescription}</p>
+                  <p className="text-sm">{selectedShop.shopDescription}</p>
+                </div>
+              )}
+              {selectedShop.taxInfo && (
+                <div className="p-3 bg-orange-apricot/20 rounded-lg">
+                  <p className="text-xs font-medium text-gray-700 mb-2">
+                    Thông tin thuế
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-500">Mã số thuế:</span>
+                      <p className="font-medium">
+                        {selectedShop.taxInfo.taxCode}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Tên doanh nghiệp:</span>
+                      <p className="font-medium">
+                        {selectedShop.taxInfo.taxNationalName}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -417,6 +508,14 @@ export default function ShopsPage() {
             <DialogTitle>Duyệt cửa hàng</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {selectedPendingShop && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium">{selectedPendingShop.shopName}</p>
+                <p className="text-sm text-gray-600">
+                  {selectedPendingShop.shopEmail}
+                </p>
+              </div>
+            )}
             <div>
               <Label>Phản hồi (tùy chọn)</Label>
               <textarea
@@ -435,7 +534,10 @@ export default function ShopsPage() {
               <XCircle className="h-4 w-4 mr-1" />
               Từ chối
             </Button>
-            <Button onClick={() => handleApprove(true)} className="bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={() => handleApprove(true)}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <CheckCircle className="h-4 w-4 mr-1" />
               Duyệt
             </Button>
@@ -443,5 +545,5 @@ export default function ShopsPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

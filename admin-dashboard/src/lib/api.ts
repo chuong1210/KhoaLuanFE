@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { cookies } from '@/lib/cookies' // SỬA: Import utility cookie
 
 // Base API URLs
 export const API_URLS = {
@@ -45,10 +46,12 @@ export const authApi = axios.create({
   },
 })
 
-// Request interceptor to add token
+// SỬA: Request interceptor lấy token từ Cookie
 const addAuthToken = (config: InternalAxiosRequestConfig) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token')
+    // Thay localStorage.getItem bằng cookies.get
+    const token = cookies.get('token') 
+    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -56,11 +59,14 @@ const addAuthToken = (config: InternalAxiosRequestConfig) => {
   return config
 }
 
-// Response interceptor to handle errors
+// SỬA: Response interceptor xóa Cookie khi lỗi 401
 const handleResponseError = (error: AxiosError) => {
   if (error.response?.status === 401) {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('token')
+      // Thay localStorage.removeItem bằng cookies.remove
+      cookies.remove('token')
+      
+      // Redirect về login
       window.location.href = '/auth/login'
     }
   }
@@ -68,7 +74,9 @@ const handleResponseError = (error: AxiosError) => {
 }
 
 // Apply interceptors to all instances
+// Lưu ý: Nếu authApi cần dùng token cho các endpoint như /profile hay /logout, hãy thêm authApi vào mảng này.
 const apiInstances = [productApi, orderApi, shopApi, analyticsApi]
+
 apiInstances.forEach((instance) => {
   instance.interceptors.request.use(addAuthToken)
   instance.interceptors.response.use((response) => response, handleResponseError)

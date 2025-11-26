@@ -61,17 +61,15 @@ export function getStatusColor(status: string): string {
   }
   return statusColors[status] || 'badge-info'
 }
-
-export function parseQueryParams(
-  params: Record<string, unknown> | { [key: string]: unknown }
-): string {
-  const searchParams = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, String(value))
-    }
-  })
-  return searchParams.toString()
+/**
+ * Parse query parameters object into URL query string
+ * Filters out undefined, null, and empty string values
+ */
+export function parseQueryParams(params: Record<string, any>): string {
+  return Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+    .join('&');
 }
 
 export function debounce<T extends (...args: unknown[]) => void>(

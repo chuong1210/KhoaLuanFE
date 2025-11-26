@@ -416,12 +416,18 @@ export default function CategoriesPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="parent">Danh mục cha (tùy chọn)</Label>
-              <Select value={parentId} onValueChange={setParentId}>
+              <Select
+                // SỬA: Nếu parentId là rỗng thì giá trị hiển thị là "root"
+                value={parentId || "root"}
+                // SỬA: Nếu chọn "root" thì set state về rỗng, ngược lại giữ nguyên ID
+                onValueChange={(val) => setParentId(val === "root" ? "" : val)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
+                  {/* SỬA: Thay value="" bằng value="root" */}
+                  <SelectItem value="root">Không có (danh mục gốc)</SelectItem>
                   {allCategories.map((cat) => (
                     <SelectItem key={cat.category_id} value={cat.category_id}>
                       {cat.name}
@@ -517,12 +523,17 @@ export default function CategoriesPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-parent">Danh mục cha (tùy chọn)</Label>
-              <Select value={parentId} onValueChange={setParentId}>
+              <Select
+                // SỬA: Tương tự như trên
+                value={parentId || "root"}
+                onValueChange={(val) => setParentId(val === "root" ? "" : val)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
+                  {/* SỬA: Thay value="" bằng value="root" */}
+                  <SelectItem value="root">Không có (danh mục gốc)</SelectItem>
                   {allCategories
                     .filter(
                       (cat) => cat.category_id !== selectedCategory?.category_id

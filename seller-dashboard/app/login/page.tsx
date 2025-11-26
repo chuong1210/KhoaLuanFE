@@ -30,6 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
+  // Logic giữ nguyên
   const fetchShopAfterLogin = async (token: string) => {
     dispatch(setShopLoading());
     try {
@@ -77,7 +78,6 @@ export default function LoginPage() {
 
         cookies.set("token", token, 7);
 
-        console.log("Decoded Token:", decoded);
         dispatch(
           setCredentials({
             token,
@@ -100,94 +100,83 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-      }}
-    >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 relative overflow-hidden">
+      {/* Decorative Background Blobs - Nhẹ nhàng hơn */}
+      <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+      <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-amber-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
 
-      <Card className="w-full max-w-md shadow-2xl relative z-10 border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="space-y-4 text-center pb-6">
+      <Card className="w-full max-w-md shadow-xl border border-gray-100 bg-white relative z-10">
+        <CardHeader className="space-y-3 text-center pb-6 pt-8">
           <div className="flex justify-center mb-2">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform"
-              style={{
-                background: "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
-              }}
-            >
-              <Store className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mb-2">
+              <Store className="w-8 h-8 text-orange-600" />
             </div>
           </div>
           <div>
-            <CardTitle
-              className="text-3xl font-bold"
-              style={{ color: "#E65100" }}
-            >
-              Seller Dashboard
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Chào mừng trở lại
             </CardTitle>
-            <CardDescription className="text-base mt-2 text-gray-600">
-              Đăng nhập để quản lý cửa hàng của bạn
+            <CardDescription className="text-base mt-2 text-gray-500">
+              Đăng nhập vào hệ thống Seller Dashboard
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="pb-8">
-          <form onSubmit={handleLogin} className="space-y-5">
+
+        <CardContent className="pb-8 px-8">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label
                 htmlFor="username"
-                className="text-sm font-semibold"
-                style={{ color: "#E65100" }}
+                className="text-sm font-medium text-gray-700"
               >
                 Tên đăng nhập
               </Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Nhập tên đăng nhập"
+                placeholder="Nhập tên đăng nhập của bạn"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="h-11 border-2 focus:border-[#FF6A00] transition-colors"
+                className="h-11 border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 transition-all"
               />
             </div>
+
             <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-semibold"
-                style={{ color: "#E65100" }}
-              >
-                Mật khẩu
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Mật khẩu
+                </Label>
+                <span className="text-xs text-orange-600 hover:text-orange-700 cursor-pointer font-medium">
+                  Quên mật khẩu?
+                </span>
+              </div>
               <Input
                 id="password"
                 type="password"
-                placeholder="Nhập mật khẩu"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-11 border-2 focus:border-[#FF6A00] transition-colors"
+                className="h-11 border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 transition-all"
               />
             </div>
+
             <Button
               type="submit"
-              className="w-full h-11 text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]"
+              className="w-full h-11 font-medium text-white shadow-md hover:shadow-lg transition-all"
               disabled={isLoading}
               style={{
-                background: isLoading
-                  ? "#FFB38A"
-                  : "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
+                backgroundColor: "#FF6A00", // Giữ màu brand chính
               }}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Đang đăng nhập...
+                  Đang xử lý...
                 </>
               ) : (
                 "Đăng nhập"
@@ -195,20 +184,19 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Bằng cách đăng nhập, bạn đồng ý với</p>
-            <p className="mt-1">
-              <span className="text-[#FF6A00] font-medium cursor-pointer hover:underline">
-                Điều khoản dịch vụ
-              </span>{" "}
-              và{" "}
-              <span className="text-[#FF6A00] font-medium cursor-pointer hover:underline">
-                Chính sách bảo mật
-              </span>
-            </p>
+          <div className="mt-8 text-center text-sm text-gray-500">
+            Chưa có cửa hàng?{" "}
+            <span className="text-orange-600 font-semibold cursor-pointer hover:underline">
+              Đăng ký ngay
+            </span>
           </div>
         </CardContent>
       </Card>
+
+      {/* Footer text nhỏ */}
+      <div className="absolute bottom-6 text-xs text-gray-400 text-center w-full">
+        &copy; 2025 Seller Platform. All rights reserved.
+      </div>
     </div>
   );
 }

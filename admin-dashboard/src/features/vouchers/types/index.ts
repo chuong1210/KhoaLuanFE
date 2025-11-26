@@ -1,3 +1,5 @@
+// features/vouchers/types/index.ts
+
 export type DiscountType = 'PERCENTAGE' | 'FIXED_AMOUNT'
 export type AppliesToType = 'ORDER_TOTAL' | 'SHIPPING_FEE'
 export type AudienceType = 'PUBLIC' | 'ASSIGNED'
@@ -40,8 +42,16 @@ export interface VoucherSearchParams {
   applies_to_type?: AppliesToType
   audience_type?: AudienceType
   is_active?: boolean
-  sort_by?: string
+  sort_by?: 'end_date_asc' | 'end_date_desc' | 'created_at_asc' | 'created_at_desc' | 'start_date_asc' | 'start_date_desc'
   shop_id?: string
+  owner_type?: OwnerType
+  status?: VoucherStatus
+  min_discount_value?: number
+  max_discount_value?: number
+  start_date_from?: string
+  start_date_to?: string
+  end_date_from?: string
+  end_date_to?: string
 }
 
 export interface VouchersResponse {
@@ -68,4 +78,8 @@ export interface CreateVoucherRequest {
   total_quantity: number
   max_usage_per_user: number
   user_use?: string[]
+}
+
+export interface UpdateVoucherRequest extends Partial<CreateVoucherRequest> {
+  is_active?: boolean
 }

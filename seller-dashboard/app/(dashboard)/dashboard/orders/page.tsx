@@ -6,16 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { orderService } from "@/services/order-service";
 import { useAppSelector } from "@/store/hooks";
 import type { OrderStatus, OrderSearchParams } from "@/types/order";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -42,10 +35,10 @@ import {
   DollarSign,
   Eye,
   Filter,
-  Search,
   RefreshCw,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Pagination } from "@/components/pagination_form";
 
 const STATUS_CONFIG = {
   AWAITING_PAYMENT: { label: "Chờ thanh toán", icon: Clock, color: "#FFB000" },
@@ -118,8 +111,9 @@ export default function OrdersListPage() {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
-  const handlePageChange = (newPage: number) => {
-    setFilters((prev) => ({ ...prev, page: newPage }));
+  const handlePageChange = (page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const getStatusCount = (status: OrderStatus) => {
@@ -225,11 +219,16 @@ export default function OrdersListPage() {
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
               <div className="flex-1 min-w-[200px]">
-                <Label className="mb-2 block text-sm font-medium">Trạng thái</Label>
+                <Label className="mb-2 block text-sm font-medium">
+                  Trạng thái
+                </Label>
                 <Select
                   value={filters.status || "ALL"}
                   onValueChange={(value) =>
-                    handleFilterChange("status", value === "ALL" ? undefined : value)
+                    handleFilterChange(
+                      "status",
+                      value === "ALL" ? undefined : value
+                    )
                   }
                 >
                   <SelectTrigger className="h-10 border-[#FFB38A] focus:ring-[#FF6A00]">
@@ -271,10 +270,6 @@ export default function OrdersListPage() {
       <Card className="border-0 shadow-md">
         <CardHeader>
           <CardTitle style={{ color: "#E65100" }}>Danh sách đơn hàng</CardTitle>
-          <CardDescription>
-            Trang {data?.result.currentPage || 1} /{" "}
-            {data?.result.totalPages || 1}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -407,95 +402,15 @@ export default function OrdersListPage() {
                 </Table>
               </div>
 
-              {/* Pagination */}
+              {/* Modern Pagination */}
               {data.result.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-gray-600">
-                    Hiển thị{" "}
-                    {(data.result.currentPage - 1) * data.result.limit + 1} -{" "}
-                    {Math.min(
-                      data.result.currentPage * data.result.limit,
-                      data.result.totalElements
-                    )}{" "}
-                    trong tổng số {data.result.totalElements} đơn hàng
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={data.result.currentPage === 1}
-                      onClick={() =>
-                        handlePageChange(data.result.currentPage - 1)
-                      }
-                      className="border-[#FFB38A] hover:bg-[#FFF0E0]"
-                      style={{ color: "#FF6A00" }}
-                    >
-                      Trước
-                    </Button>
-                    <div className="flex items-center gap-2">
-                      {Array.from(
-                        { length: Math.min(5, data.result.totalPages) },
-                        (_, i) => {
-                          let pageNum;
-                          if (data.result.totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (data.result.currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (
-                            data.result.currentPage >=
-                            data.result.totalPages - 2
-                          ) {
-                            pageNum = data.result.totalPages - 4 + i;
-                          } else {
-                            pageNum = data.result.currentPage - 2 + i;
-                          }
-
-                          return (
-                            <Button
-                              key={pageNum}
-                              size="sm"
-                              variant={
-                                data.result.currentPage === pageNum
-                                  ? "default"
-                                  : "outline"
-                              }
-                              onClick={() => handlePageChange(pageNum)}
-                              className={
-                                data.result.currentPage === pageNum
-                                  ? "text-white"
-                                  : "border-[#FFB38A] hover:bg-[#FFF0E0]"
-                              }
-                              style={
-                                data.result.currentPage === pageNum
-                                  ? {
-                                      background:
-                                        "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
-                                    }
-                                  : { color: "#FF6A00" }
-                              }
-                            >
-                              {pageNum}
-                            </Button>
-                          );
-                        }
-                      )}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={
-                        data.result.currentPage === data.result.totalPages
-                      }
-                      onClick={() =>
-                        handlePageChange(data.result.currentPage + 1)
-                      }
-                      className="border-[#FFB38A] hover:bg-[#FFF0E0]"
-                      style={{ color: "#FF6A00" }}
-                    >
-                      Sau
-                    </Button>
-                  </div>
-                </div>
+                <Pagination
+                  currentPage={data.result.currentPage}
+                  totalPages={data.result.totalPages}
+                  onPageChange={handlePageChange}
+                  totalElements={data.result.totalElements}
+                  pageSize={filters.limit || 12}
+                />
               )}
             </>
           ) : (

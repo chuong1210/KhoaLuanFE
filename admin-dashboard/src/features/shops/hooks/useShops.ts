@@ -1,7 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+// features/shops/hooks/useShops.ts - UPDATED VERSION
+
+import { useQuery, useMutation, useQueryClient, UseQueryOptions } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { shopsService } from '../services/shopsApi'
-import type { ShopSearchParams, ShopApprovalRequest } from '../types'
+import type { ShopSearchParams, ShopApprovalRequest, ShopsResponse } from '../types/index'
 
 export const shopKeys = {
   all: ['shops'] as const,
@@ -14,10 +16,17 @@ export const shopKeys = {
     [...shopKeys.pending(), params] as const,
 }
 
-export function useShops(params: ShopSearchParams = { PageNumber: 1, PageSize: 10 }) {
+/**
+ * Get shops with optional query options
+ */
+export function useShops(
+  params: ShopSearchParams = { pagenumber: 1, pagesize: 10 },
+  options?: Omit<UseQueryOptions<ShopsResponse>, 'queryKey' | 'queryFn'>
+) {
   return useQuery({
     queryKey: shopKeys.list(params),
     queryFn: () => shopsService.getShops(params),
+    ...options,
   })
 }
 
@@ -32,7 +41,9 @@ export function useShopDetail(shopId: string) {
 // Alias for useShopDetail
 export const useShop = useShopDetail
 
-export function usePendingShops(params: { pageNumber: number; pageSize: number } = { pageNumber: 1, pageSize: 20 }) {
+export function usePendingShops(
+  params: { pageNumber: number; pageSize: number } = { pageNumber: 1, pageSize: 20 }
+) {
   return useQuery({
     queryKey: shopKeys.pendingList(params),
     queryFn: () => shopsService.getPendingShops(params),
@@ -63,7 +74,7 @@ export function useApproveShop() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: shopKeys.pending() })
       queryClient.invalidateQueries({ queryKey: shopKeys.lists() })
-      const message = variables.data.isApproved
+      const message = variables.data.IsApproved
         ? 'Duyệt shop thành công!'
         : 'Từ chối shop thành công!'
       toast.success(message)

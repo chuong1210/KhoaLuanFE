@@ -20,6 +20,11 @@ export interface Product {
   create_date: string
   update_by: string | null
   update_date: string
+  total_sold?: number
+  rating?: {
+    average_rating: number
+    total_reviews: number
+  }
 }
 
 export interface ProductDetail {
@@ -80,9 +85,23 @@ export interface ProductSearchParams {
 }
 
 export interface ProductsResponse {
-  currentPage: number
-  data: Product[]
-  limit: number
-  totalElements: number
-  totalPages: number
+  code: number
+  message: string
+  status: string
+  result: {
+    currentPage: number
+    data: Product[]
+    limit: number
+    totalElements: number
+    totalPages: number
+  }
+}
+
+export interface ProductDetailResponse {
+  code: number
+  message: string
+  status: string
+  result: {
+    data: ProductDetail
+  }
 }

@@ -1,23 +1,29 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import { useAppDispatch, useAuth } from '@/store'
-import { loginAsync, clearError } from '@/store/slices/authSlice'
-import { loginSchema, type LoginFormData } from '@/lib/validators'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAppDispatch, useAuth } from "@/store";
+import { loginAsync, clearError } from "@/store/slices/authSlice";
+import { loginSchema, type LoginFormData } from "@/lib/validators";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const dispatch = useAppDispatch()
-  const { isLoading, error } = useAuth()
-  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isLoading, error } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -26,19 +32,21 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: 'hienadmin',
-      password: 'Hienlazada#1',
+      username: "hienadmin",
+      password: "Hienlazada#1",
     },
-  })
+  });
 
   const onSubmit = async (data: LoginFormData) => {
-    dispatch(clearError())
-    const result = await dispatch(loginAsync(data))
+    dispatch(clearError());
+    const result = await dispatch(loginAsync(data));
 
     if (loginAsync.fulfilled.match(result)) {
-      router.push('/dashboard')
+      // MẸO: Thêm router.refresh() trước khi push để Next.js cập nhật lại cookie context
+      router.refresh();
+      router.push("/dashboard");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-soft-glow p-4">
@@ -76,11 +84,13 @@ export default function LoginPage() {
                   id="username"
                   type="text"
                   placeholder="Nhập tên đăng nhập"
-                  {...register('username')}
-                  className={errors.username ? 'border-orange-deep' : ''}
+                  {...register("username")}
+                  className={errors.username ? "border-orange-deep" : ""}
                 />
                 {errors.username && (
-                  <p className="text-sm text-orange-deep">{errors.username.message}</p>
+                  <p className="text-sm text-orange-deep">
+                    {errors.username.message}
+                  </p>
                 )}
               </div>
 
@@ -90,10 +100,12 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     placeholder="Nhập mật khẩu"
-                    {...register('password')}
-                    className={errors.password ? 'border-orange-deep pr-10' : 'pr-10'}
+                    {...register("password")}
+                    className={
+                      errors.password ? "border-orange-deep pr-10" : "pr-10"
+                    }
                   />
                   <button
                     type="button"
@@ -108,29 +120,29 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-orange-deep">{errors.password.message}</p>
+                  <p className="text-sm text-orange-deep">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
 
               {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Đang đăng nhập...
                   </>
                 ) : (
-                  'Đăng nhập'
+                  "Đăng nhập"
                 )}
               </Button>
 
               {/* Admin Credentials */}
               <div className="mt-4 p-3 rounded-lg bg-orange-apricot/50 text-sm">
-                <p className="font-medium text-gray-700 mb-1">Admin credentials:</p>
+                <p className="font-medium text-gray-700 mb-1">
+                  Admin credentials:
+                </p>
                 <p className="text-gray-600">Username: hienadmin</p>
                 <p className="text-gray-600">Password: Hienlazada#1</p>
               </div>
@@ -144,5 +156,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }

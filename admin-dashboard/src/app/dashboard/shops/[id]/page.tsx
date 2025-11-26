@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState, use } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
+import { useState, use } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowLeft,
   Store,
@@ -11,27 +11,26 @@ import {
   MapPin,
   Package,
   Search,
-  Filter,
   Eye,
   Trash2,
   DollarSign,
   TrendingUp,
   ShoppingCart,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Pagination } from '@/components/ui/pagination'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/ui/pagination";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -39,87 +38,100 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { useShop } from '@/features/shops/hooks/useShops'
-import { useProducts, useDeleteProduct } from '@/features/products/hooks/useProducts'
-import type { ProductSearchParams, Product } from '@/features/products/types'
-import { formatCurrency, formatDate, truncateText } from '@/lib/utils'
+} from "@/components/ui/dialog";
+import { useShop } from "@/features/shops/hooks/useShops";
+import {
+  useProducts,
+  useDeleteProduct,
+} from "@/features/products/hooks/useProducts";
+import { transformImageUrl as transformShopImageUrl } from "@/features/shops/services/shopsApi";
 
-export default function ShopDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: shopId } = use(params)
+import { transformImageUrl as transformProductImageUrl } from "@/features/products/services/productsApi";
+import type {
+  ProductSearchParams,
+  Product,
+} from "@/features/products/types/index";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
-  const [activeTab, setActiveTab] = useState('overview')
+export default function ShopDetailPage({ params }: { params: { id: string } }) {
+  const shopId = params.id;
+
+  const [activeTab, setActiveTab] = useState("overview");
   const [searchParams, setSearchParams] = useState<ProductSearchParams>({
     page: 1,
     limit: 20,
     shop_id: shopId,
-  })
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  });
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const { data: shop, isLoading: shopLoading } = useShop(shopId)
-  const { data: productsData, isLoading: productsLoading } = useProducts(searchParams)
-  const deleteProduct = useDeleteProduct()
+  const { data: shop, isLoading: shopLoading } = useShop(shopId);
+  const { data: productsData, isLoading: productsLoading } =
+    useProducts(searchParams);
+  const deleteProduct = useDeleteProduct();
 
   const handleSearch = () => {
     setSearchParams((prev) => ({
       ...prev,
       keywords: searchKeyword || undefined,
       page: 1,
-    }))
-  }
+    }));
+  };
 
   const handlePageChange = (page: number) => {
-    setSearchParams((prev) => ({ ...prev, page }))
-  }
+    setSearchParams((prev) => ({ ...prev, page }));
+  };
 
   const handleFilterChange = (key: keyof ProductSearchParams, value: any) => {
     setSearchParams((prev) => ({
       ...prev,
       [key]: value || undefined,
       page: 1,
-    }))
-  }
+    }));
+  };
 
   const handleViewProduct = (product: Product) => {
-    setSelectedProduct(product)
-    setIsDetailOpen(true)
-  }
+    setSelectedProduct(product);
+    setIsDetailOpen(true);
+  };
 
   const handleDeleteProduct = (productId: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
-      deleteProduct.mutate(productId)
+    if (confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+      deleteProduct.mutate(productId);
     }
-  }
+  };
 
   const parseMedia = (media: string): string[] => {
     try {
-      return JSON.parse(media)
+      return JSON.parse(media);
     } catch {
-      return []
+      return [];
     }
-  }
+  };
 
   // Calculate stats
   const stats = productsData
     ? {
         totalProducts: productsData.totalElements,
-        activeProducts: productsData.data.filter((p) => p.delete_status === 'Active').length,
+        activeProducts: productsData.data.filter(
+          (p) => p.delete_status === "Active"
+        ).length,
         totalValue: productsData.data.reduce((sum, p) => sum + p.max_price, 0),
         avgPrice:
           productsData.data.length > 0
-            ? productsData.data.reduce((sum, p) => sum + p.min_price, 0) / productsData.data.length
+            ? productsData.data.reduce((sum, p) => sum + p.min_price, 0) /
+              productsData.data.length
             : 0,
       }
-    : null
+    : null;
 
   return (
     <div className="space-y-6 animate-in">
@@ -131,8 +143,12 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-800">Chi tiết cửa hàng</h1>
-          <p className="text-gray-500 mt-1">Quản lý thông tin và sản phẩm của cửa hàng</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Chi tiết cửa hàng
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Quản lý thông tin và sản phẩm của cửa hàng
+          </p>
         </div>
       </div>
 
@@ -160,23 +176,37 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
               {/* Shop Logo */}
               <div className="relative h-24 w-24 rounded-full overflow-hidden bg-gradient-to-br from-orange-apricot to-orange-peach flex-shrink-0 shadow-lg">
                 {shop.shopLogo ? (
-                  <Image src={shop.shopLogo} alt={shop.shopName} fill className="object-cover" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <Store className="h-12 w-12 text-white" />
-                  </div>
-                )}
+                  <img
+                    src={transformShopImageUrl(shop.shopLogo)}
+                    alt={shop.shopName}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.classList.remove(
+                        "hidden"
+                      );
+                    }}
+                  />
+                ) : null}
+                <div className="h-full w-full flex items-center justify-center">
+                  <Store className="h-12 w-12 text-white" />
+                </div>
               </div>
 
               {/* Shop Info */}
               <div className="flex-1">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-800">{shop.shopName}</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      {shop.shopName}
+                    </h2>
                     <p className="text-gray-600 mt-1">{shop.shopDescription}</p>
                   </div>
-                  <Badge variant={shop.shopStatus ? 'success' : 'error'} className="text-sm px-3 py-1">
-                    {shop.shopStatus ? 'Hoạt động' : 'Tạm dừng'}
+                  <Badge
+                    variant={shop.shopStatus ? "success" : "error"}
+                    className="text-sm px-3 py-1"
+                  >
+                    {shop.shopStatus ? "Hoạt động" : "Tạm dừng"}
                   </Badge>
                 </div>
 
@@ -197,15 +227,21 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
 
                 {shop.taxInfo && (
                   <div className="mt-4 p-3 bg-orange-apricot/20 rounded-lg">
-                    <p className="text-xs font-medium text-gray-700">Thông tin thuế</p>
+                    <p className="text-xs font-medium text-gray-700">
+                      Thông tin thuế
+                    </p>
                     <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
                       <div>
                         <span className="text-gray-500">Mã số thuế:</span>
-                        <span className="ml-2 font-medium">{shop.taxInfo.taxCode}</span>
+                        <span className="ml-2 font-medium">
+                          {shop.taxInfo.taxCode}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-500">Tên doanh nghiệp:</span>
-                        <span className="ml-2 font-medium">{shop.taxInfo.taxNationalName}</span>
+                        <span className="ml-2 font-medium">
+                          {shop.taxInfo.taxNationalName}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -248,7 +284,9 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                   <Package className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-700">{stats.totalProducts}</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {stats.totalProducts}
+                  </div>
                   <p className="text-xs text-gray-600 mt-1">
                     {stats.activeProducts} đang hoạt động
                   </p>
@@ -266,7 +304,9 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                   <div className="text-2xl font-bold text-green-700">
                     {formatCurrency(stats.totalValue)}
                   </div>
-                  <p className="text-xs text-gray-600 mt-1">Tổng giá trị sản phẩm</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Tổng giá trị sản phẩm
+                  </p>
                 </CardContent>
               </Card>
 
@@ -317,11 +357,14 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                       placeholder="Tìm kiếm sản phẩm theo tên..."
                       value={searchKeyword}
                       onChange={(e) => setSearchKeyword(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                       className="pl-10"
                     />
                   </div>
-                  <Button onClick={handleSearch} className="bg-orange-vivid hover:bg-orange-deep">
+                  <Button
+                    onClick={handleSearch}
+                    className="bg-orange-vivid hover:bg-orange-deep"
+                  >
                     <Search className="h-4 w-4 mr-2" />
                     Tìm
                   </Button>
@@ -331,8 +374,8 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                 <div className="flex flex-wrap gap-3">
                   {/* Sort */}
                   <Select
-                    value={searchParams.sort || 'newest'}
-                    onValueChange={(value) => handleFilterChange('sort', value)}
+                    value={searchParams.sort || "newest"}
+                    onValueChange={(value) => handleFilterChange("sort", value)}
                   >
                     <SelectTrigger className="w-[160px]">
                       <SelectValue placeholder="Sắp xếp" />
@@ -352,7 +395,10 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                       placeholder="Giá từ"
                       className="w-32"
                       onChange={(e) =>
-                        handleFilterChange('price_min', e.target.value ? Number(e.target.value) : undefined)
+                        handleFilterChange(
+                          "price_min",
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
                       }
                     />
                     <span className="text-gray-400">-</span>
@@ -361,7 +407,10 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                       placeholder="Giá đến"
                       className="w-32"
                       onChange={(e) =>
-                        handleFilterChange('price_max', e.target.value ? Number(e.target.value) : undefined)
+                        handleFilterChange(
+                          "price_max",
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
                       }
                     />
                   </div>
@@ -370,12 +419,12 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setSearchKeyword('')
+                      setSearchKeyword("");
                       setSearchParams({
                         page: 1,
                         limit: 20,
                         shop_id: shopId,
-                      })
+                      });
                     }}
                   >
                     Xóa bộ lọc
@@ -439,17 +488,21 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                         <TableCell>
                           <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-orange-apricot shadow-sm">
                             {product.image ? (
-                              <Image
-                                src={product.image}
+                              <img
+                                src={transformProductImageUrl(product.image)}
                                 alt={product.name}
-                                fill
-                                className="object-cover"
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  e.currentTarget.nextElementSibling?.classList.remove(
+                                    "hidden"
+                                  );
+                                }}
                               />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center">
-                                <Package className="h-6 w-6 text-orange-peach" />
-                              </div>
-                            )}
+                            ) : null}
+                            <div className="h-full w-full flex items-center justify-center">
+                              <Package className="h-6 w-6 text-orange-peach" />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -490,14 +543,22 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-400">Chưa có</span>
+                            <span className="text-xs text-gray-400">
+                              Chưa có
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={product.delete_status === 'Active' ? 'success' : 'error'}
+                            variant={
+                              product.delete_status === "Active"
+                                ? "success"
+                                : "error"
+                            }
                           >
-                            {product.delete_status === 'Active' ? 'Hoạt động' : 'Đã xóa'}
+                            {product.delete_status === "Active"
+                              ? "Hoạt động"
+                              : "Đã xóa"}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -528,8 +589,12 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                       <TableCell colSpan={7} className="text-center py-12">
                         <div className="text-gray-500">
                           <Package className="h-16 w-16 mx-auto mb-3 text-orange-peach opacity-50" />
-                          <p className="text-lg font-medium">Chưa có sản phẩm nào</p>
-                          <p className="text-sm mt-1">Cửa hàng này chưa có sản phẩm</p>
+                          <p className="text-lg font-medium">
+                            Chưa có sản phẩm nào
+                          </p>
+                          <p className="text-sm mt-1">
+                            Cửa hàng này chưa có sản phẩm
+                          </p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -557,7 +622,9 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chi tiết sản phẩm</DialogTitle>
-            <DialogDescription>Thông tin chi tiết về sản phẩm</DialogDescription>
+            <DialogDescription>
+              Thông tin chi tiết về sản phẩm
+            </DialogDescription>
           </DialogHeader>
           {selectedProduct && (
             <div className="space-y-6">
@@ -565,33 +632,53 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
               <div className="flex gap-4">
                 <div className="relative h-32 w-32 rounded-lg overflow-hidden bg-orange-apricot flex-shrink-0 shadow-md">
                   {selectedProduct.image ? (
-                    <Image
-                      src={selectedProduct.image}
+                    <img
+                      src={transformProductImageUrl(selectedProduct.image)}
                       alt={selectedProduct.name}
-                      fill
-                      className="object-cover"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          "hidden"
+                        );
+                      }}
                     />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <Package className="h-12 w-12 text-orange-peach" />
-                    </div>
-                  )}
+                  ) : null}
+                  <div className="h-full w-full flex items-center justify-center">
+                    <Package className="h-12 w-12 text-orange-peach" />
+                  </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-xl text-gray-800">{selectedProduct.name}</h3>
-                  <p className="text-gray-600 text-sm mt-2">{selectedProduct.short_description}</p>
+                  <h3 className="font-bold text-xl text-gray-800">
+                    {selectedProduct.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-2">
+                    {selectedProduct.short_description}
+                  </p>
                   <div className="flex items-center gap-4 mt-3">
                     <div>
                       <span className="text-sm text-gray-500">Giá:</span>
                       <span className="ml-2 font-bold text-lg text-orange-vivid">
                         {formatCurrency(selectedProduct.min_price)}
-                        {selectedProduct.min_price !== selectedProduct.max_price && (
-                          <span className="text-base"> - {formatCurrency(selectedProduct.max_price)}</span>
+                        {selectedProduct.min_price !==
+                          selectedProduct.max_price && (
+                          <span className="text-base">
+                            {" "}
+                            - {formatCurrency(selectedProduct.max_price)}
+                          </span>
                         )}
                       </span>
                     </div>
-                    <Badge variant={selectedProduct.delete_status === 'Active' ? 'success' : 'error'}>
-                      {selectedProduct.delete_status === 'Active' ? 'Hoạt động' : 'Đã xóa'}
+                    <Badge
+                      variant={
+                        selectedProduct.delete_status === "Active"
+                          ? "success"
+                          : "error"
+                      }
+                    >
+                      {selectedProduct.delete_status === "Active"
+                        ? "Hoạt động"
+                        : "Đã xóa"}
                     </Badge>
                   </div>
                 </div>
@@ -601,7 +688,9 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600">Đã bán</p>
-                  <p className="text-xl font-bold text-blue-700">{selectedProduct.total_sold || 0}</p>
+                  <p className="text-xl font-bold text-blue-700">
+                    {selectedProduct.total_sold || 0}
+                  </p>
                 </div>
                 {selectedProduct.rating && (
                   <>
@@ -633,21 +722,29 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div className="p-3 bg-gray-50 rounded">
                   <span className="text-gray-500">Tạo bởi:</span>
-                  <p className="font-medium mt-1">{selectedProduct.create_by}</p>
+                  <p className="font-medium mt-1">
+                    {selectedProduct.create_by}
+                  </p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded">
                   <span className="text-gray-500">Ngày tạo:</span>
-                  <p className="font-medium mt-1">{formatDate(selectedProduct.create_date)}</p>
+                  <p className="font-medium mt-1">
+                    {formatDate(selectedProduct.create_date)}
+                  </p>
                 </div>
               </div>
 
               {/* Description */}
               {selectedProduct.description && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Mô tả chi tiết:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Mô tả chi tiết:
+                  </p>
                   <div
                     className="prose prose-sm max-w-none text-gray-700 max-h-60 overflow-y-auto p-4 bg-gray-50 rounded-lg"
-                    dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
+                    dangerouslySetInnerHTML={{
+                      __html: selectedProduct.description,
+                    }}
                   />
                 </div>
               )}
@@ -655,14 +752,23 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
               {/* Media Gallery */}
               {selectedProduct.media && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-3">Hình ảnh sản phẩm:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-3">
+                    Hình ảnh sản phẩm:
+                  </p>
                   <div className="grid grid-cols-5 gap-3">
                     {parseMedia(selectedProduct.media).map((url, index) => (
                       <div
                         key={index}
                         className="relative aspect-square rounded-lg overflow-hidden bg-orange-apricot shadow-sm hover:shadow-md transition-shadow"
                       >
-                        <Image src={url} alt={`Media ${index + 1}`} fill className="object-cover" />
+                        <img
+                          src={transformProductImageUrl(url)}
+                          alt={`Media ${index + 1}`}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -673,5 +779,5 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

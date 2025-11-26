@@ -1,20 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productService } from "@/services/product-service";
 import { useAppSelector } from "@/store/hooks";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -47,6 +40,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Product, ProductFilters } from "@/types/product";
 import { ImportProductDialog } from "./components/product-import-modal";
+import { Pagination } from "@/components/pagination_form";
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -93,6 +87,11 @@ export default function ProductsPage() {
     }));
   };
 
+  const handlePageChange = (page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -134,20 +133,19 @@ export default function ProductsPage() {
       }}
     >
       <div className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
-        {/* Header với gradient động */}
+        {/* Header */}
         <div
-          className="relative overflow-hidden rounded-3xl p-10 text-white shadow-2xl transform transition-all duration-300 hover:shadow-3xl"
+          className="relative overflow-hidden rounded-3xl p-10 text-white shadow-2xl"
           style={{
             background:
               "linear-gradient(120deg, #E65100 0%, #FF6A00 60%, #FFD3A3 100%)",
           }}
         >
-          <div className="absolute inset-0 bg-linear-to-br from-black/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-32 translate-x-32"></div>
 
           <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-lg ring-4 ring-white/30 transform transition-transform hover:scale-110">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md shadow-lg ring-4 ring-white/30">
                 <Package className="h-10 w-10" />
               </div>
               <div>
@@ -165,13 +163,10 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Nút Import Excel - Gọn gàng hơn */}
               <ImportProductDialog />
-
-              {/* Nút chính */}
               <Button
                 size="lg"
-                className="bg-white text-[#ffffff] hover:bg-[#FFF0E0] hover:text-[#E65100] shadow-xl font-semibold px-8 py-6 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                className="bg-white text-[#f3f3f3] hover:bg-[#FFF0E0] hover:text-[#E65100] shadow-xl font-semibold px-8 py-6 rounded-xl"
                 onClick={() => router.push("/dashboard/products/create")}
               >
                 <Plus className="mr-2 h-5 w-5" />
@@ -181,8 +176,8 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Filters với thiết kế hiện đại */}
-        <Card className="border-none shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
+        {/* Filters */}
+        <Card className="border-none shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
           <CardHeader
             className="border-b-0 pb-4"
             style={{
@@ -215,12 +210,12 @@ export default function ProductsPage() {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="pl-12 h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] focus:ring-4 focus:ring-[#FF6A00]/10 rounded-xl transition-all"
+                      className="pl-12 h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] focus:ring-4 focus:ring-[#FF6A00]/10 rounded-xl"
                     />
                   </div>
                   <Button
                     onClick={handleSearch}
-                    className="h-12 px-6 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                    className="h-12 px-6 rounded-xl font-semibold shadow-lg"
                     style={{
                       background:
                         "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
@@ -237,22 +232,14 @@ export default function ProductsPage() {
                   setFilters((prev) => ({ ...prev, sort: value, page: 1 }))
                 }
               >
-                <SelectTrigger className="h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] focus:ring-4 focus:ring-[#FF6A00]/10 rounded-xl font-medium">
+                <SelectTrigger className="h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] rounded-xl font-medium">
                   <SelectValue placeholder="Sắp xếp" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="price_desc" className="rounded-lg py-3">
-                    💰 Giá giảm dần
-                  </SelectItem>
-                  <SelectItem value="price_asc" className="rounded-lg py-3">
-                    💵 Giá tăng dần
-                  </SelectItem>
-                  <SelectItem value="name_asc" className="rounded-lg py-3">
-                    🔤 Tên (A-Z)
-                  </SelectItem>
-                  <SelectItem value="name_desc" className="rounded-lg py-3">
-                    🔡 Tên (Z-A)
-                  </SelectItem>
+                  <SelectItem value="price_desc">💰 Giá giảm dần</SelectItem>
+                  <SelectItem value="price_asc">💵 Giá tăng dần</SelectItem>
+                  <SelectItem value="name_asc">🔤 Tên (A-Z)</SelectItem>
+                  <SelectItem value="name_desc">🔡 Tên (Z-A)</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -266,22 +253,14 @@ export default function ProductsPage() {
                   }))
                 }
               >
-                <SelectTrigger className="h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] focus:ring-4 focus:ring-[#FF6A00]/10 rounded-xl font-medium">
+                <SelectTrigger className="h-12 border-2 border-[#FFB38A]/40 focus:border-[#FF6A00] rounded-xl font-medium">
                   <SelectValue placeholder="Số lượng" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="10" className="rounded-lg py-3">
-                    📦 10 sản phẩm
-                  </SelectItem>
-                  <SelectItem value="20" className="rounded-lg py-3">
-                    📦 20 sản phẩm
-                  </SelectItem>
-                  <SelectItem value="50" className="rounded-lg py-3">
-                    📦 50 sản phẩm
-                  </SelectItem>
-                  <SelectItem value="100" className="rounded-lg py-3">
-                    📦 100 sản phẩm
-                  </SelectItem>
+                  <SelectItem value="10">📦 10 sản phẩm</SelectItem>
+                  <SelectItem value="20">📦 20 sản phẩm</SelectItem>
+                  <SelectItem value="50">📦 50 sản phẩm</SelectItem>
+                  <SelectItem value="100">📦 100 sản phẩm</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -308,8 +287,8 @@ export default function ProductsPage() {
                 className="border-2 border-red-200 rounded-2xl"
               >
                 <AlertCircle className="h-5 w-5" />
-                <AlertTitle className="text-lg font-bold">Lỗi</AlertTitle>
-                <AlertDescription className="text-base">
+                <AlertTitle>Lỗi</AlertTitle>
+                <AlertDescription>
                   Không thể tải danh sách sản phẩm. Vui lòng thử lại.
                 </AlertDescription>
               </Alert>
@@ -318,7 +297,6 @@ export default function ProductsPage() {
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {productData.data.map((product: Product) => {
                     const imageUrl = productService.getImageUrl(product.image);
-
                     const priceRange =
                       product.min_price === product.max_price
                         ? formatPrice(product.min_price)
@@ -331,7 +309,6 @@ export default function ProductsPage() {
                         key={product.id}
                         className="group relative overflow-hidden border border-[#FFB38A]/30 hover:border-[#FF6A00] transition-all duration-200 hover:shadow-lg rounded-xl bg-white"
                       >
-                        {/* Image container - compact */}
                         <div className="relative h-36 overflow-hidden bg-[#FFF0E0]">
                           <img
                             src={imageUrl}
@@ -344,34 +321,32 @@ export default function ProductsPage() {
                             }}
                           />
 
-                          {/* Action button */}
                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   size="icon"
-                                  className="h-8 w-8 rounded-lg bg-white/90 hover:bg-white shadow-md border border-[#FFB38A]/30"
+                                  className="h-8 w-8 rounded-lg bg-white/90 hover:bg-white shadow-md"
                                 >
                                   <MoreHorizontal className="h-4 w-4 text-[#FF6A00]" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent
                                 align="end"
-                                className="w-44 rounded-lg shadow-xl border border-[#FFB38A]/20"
+                                className="w-44 rounded-lg"
                               >
-                                <DropdownMenuLabel className="text-sm font-bold text-[#E65100]">
+                                <DropdownMenuLabel className="text-[#E65100]">
                                   Thao tác
                                 </DropdownMenuLabel>
-                                <DropdownMenuSeparator className="bg-[#FFB38A]/20" />
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() =>
                                     router.push(
                                       `/dashboard/products/${product.id}`
                                     )
                                   }
-                                  className="rounded cursor-pointer hover:bg-[#FFF0E0] text-sm"
                                 >
-                                  <Eye className="mr-2 h-4 w-4 text-[#FF8A33]" />
+                                  <Eye className="mr-2 h-4 w-4" />
                                   Xem chi tiết
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -380,16 +355,15 @@ export default function ProductsPage() {
                                       `/dashboard/products/${product.id}/edit`
                                     )
                                   }
-                                  className="rounded cursor-pointer hover:bg-[#FFF0E0] text-sm"
                                 >
-                                  <Edit className="mr-2 h-4 w-4 text-[#FFB000]" />
+                                  <Edit className="mr-2 h-4 w-4" />
                                   Chỉnh sửa
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() =>
                                     deleteProductMutation.mutate(product.id)
                                   }
-                                  className="text-red-600 hover:bg-red-50 rounded cursor-pointer text-sm"
+                                  className="text-red-600"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Xóa
@@ -399,10 +373,9 @@ export default function ProductsPage() {
                           </div>
                         </div>
 
-                        {/* Content - compact */}
                         <CardContent className="p-3">
                           <h3
-                            className="line-clamp-2 font-semibold text-sm text-[#1C1917] mb-1 group-hover:text-[#FF6A00] transition-colors cursor-pointer min-h-10"
+                            className="line-clamp-2 font-semibold text-sm text-[#1C1917] mb-1 group-hover:text-[#FF6A00] min-h-10 cursor-pointer"
                             onClick={() =>
                               router.push(`/dashboard/products/${product.id}`)
                             }
@@ -417,7 +390,7 @@ export default function ProductsPage() {
                           {product.rating && (
                             <div className="flex items-center gap-1 text-xs">
                               <span className="text-[#FFB000]">★</span>
-                              <span className="font-medium text-gray-700">
+                              <span className="font-medium">
                                 {product.rating.average_rating.toFixed(1)}
                               </span>
                               <span className="text-gray-400">
@@ -431,78 +404,21 @@ export default function ProductsPage() {
                   })}
                 </div>
 
-                {/* Pagination */}
+                {/* Modern Pagination */}
                 {productData.totalPages > 1 && (
-                  <div className="mt-10 flex items-center justify-center gap-3">
-                    <Button
-                      variant="outline"
-                      disabled={filters.page === 1}
-                      onClick={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          page: (prev.page || 1) - 1,
-                        }))
-                      }
-                      className="h-11 px-6 border-2 border-[#FFB38A]/40 hover:border-[#FF6A00] hover:bg-[#FFF0E0] rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      ← Trước
-                    </Button>
-
-                    <div className="flex items-center gap-2">
-                      {Array.from(
-                        { length: Math.min(5, productData.totalPages) },
-                        (_, i) => {
-                          const page = i + 1;
-                          return (
-                            <Button
-                              key={page}
-                              variant={
-                                filters.page === page ? "default" : "outline"
-                              }
-                              className={
-                                filters.page === page
-                                  ? "h-11 w-11 rounded-xl font-bold text-white shadow-lg transition-all"
-                                  : "h-11 w-11 border-2 border-[#FFB38A]/40 hover:border-[#FF6A00] hover:bg-[#FFF0E0] rounded-xl font-semibold transition-all"
-                              }
-                              style={
-                                filters.page === page
-                                  ? {
-                                      background:
-                                        "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-                                    }
-                                  : {}
-                              }
-                              onClick={() =>
-                                setFilters((prev) => ({ ...prev, page }))
-                              }
-                            >
-                              {page}
-                            </Button>
-                          );
-                        }
-                      )}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      disabled={filters.page === productData.totalPages}
-                      onClick={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          page: (prev.page || 1) + 1,
-                        }))
-                      }
-                      className="h-11 px-6 border-2 border-[#FFB38A]/40 hover:border-[#FF6A00] hover:bg-[#FFF0E0] rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Sau →
-                    </Button>
-                  </div>
+                  <Pagination
+                    currentPage={productData.currentPage || filters.page || 1}
+                    totalPages={productData.totalPages}
+                    onPageChange={handlePageChange}
+                    totalElements={productData.totalElements}
+                    pageSize={filters.limit || 20}
+                  />
                 )}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-20">
                 <div
-                  className="mb-6 flex h-28 w-28 items-center justify-center rounded-3xl shadow-2xl animate-pulse"
+                  className="mb-6 flex h-28 w-28 items-center justify-center rounded-3xl shadow-2xl"
                   style={{
                     background:
                       "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
@@ -518,7 +434,7 @@ export default function ProductsPage() {
                 </p>
                 <Button
                   size="lg"
-                  className="px-8 py-6 rounded-xl font-bold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
+                  className="px-8 py-6 rounded-xl font-bold text-white shadow-2xl"
                   style={{
                     background:
                       "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",

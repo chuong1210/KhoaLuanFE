@@ -12,6 +12,7 @@ export interface Shop {
   followerCount: number
   isFollowing: boolean
   createdDate: string
+  banners?: string[]
   taxInfo: TaxInfo | null
 }
 
@@ -31,17 +32,16 @@ export interface PendingShop {
   shopName: string
   shopEmail: string
   shopPhone: string
-  taxInfo: TaxInfo | null
   shopStatus: boolean
   pendingProductCount: number
   createdDate: string
 }
 
 export interface ShopSearchParams {
-  PageNumber?: number
-  PageSize?: number
-  SearchTerm?: string
-  Status?: boolean
+  pagenumber?: number
+  pagesize?: number
+  searchterm?: string
+  status?: boolean
 }
 
 export interface ShopsResponse {
@@ -58,7 +58,35 @@ export interface ShopsResponse {
   code: number
 }
 
+export interface PendingShopsResponse {
+  extra: {
+    currentPage: number
+    totalPages: number
+    totalElements: number
+    pageSize: number
+    hasPreviousPage: boolean
+    hasNextPage: boolean
+  }
+  result: PendingShop[]
+  succeeded: boolean
+  code: number
+}
+
+export interface ShopDetailResponse {
+  result: Shop
+  messages: string[]
+  succeeded: boolean
+  code: number
+}
+
 export interface ShopApprovalRequest {
-  isApproved: boolean
-  feedback?: string
+  IsApproved: boolean
+  Feedback?: string
+}
+
+export interface ShopApprovalResponse {
+  result: boolean
+  messages: string[]
+  succeeded: boolean
+  code: number
 }

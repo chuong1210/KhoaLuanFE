@@ -1,56 +1,67 @@
-import { productApi, ApiResponse, PaginatedResult } from '@/lib/api'
-import { parseQueryParams } from '@/lib/utils'
-import type { Product, ProductDetail, ProductSearchParams, ProductSku } from '../types'
+import axios from 'axios'
+import type {
+  Product,
+  ProductDetail,
+  ProductSearchParams,
+  ProductsResponse,
+  ProductDetailResponse,
+} from '../types'
+import { productApi, ApiResponse } from '@/lib/api'
+
+// Create axios instance
+// const productApi = axios.create({
+//   baseURL: 'http://localhost:9001/v1/product',
+//   headers: {
+//     'Content-Type': 'application/json',
+//   },
+// })
+
+// Helper function to parse query params
+const parseQueryParams = (params: Record<string, any>): string => {
+  return Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+    .join('&')
+}
+
+// Helper function to transform image URL
+export const transformImageUrl = (imagePath: string): string => {
+  if (!imagePath) return ''
+  
+  // If it's already a full URL (http/https), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+  
+  // If it's a local path like "0.0.0.0:9001/v1/media/stream/..."
+  if (imagePath.includes('/v1/media/stream/')) {
+    const filename = imagePath.split('/v1/media/stream/')[1]
+    return `http://localhost:9001/v1/media/${filename}`
+  }
+  
+  // Default: assume it's just a filename
+  return `http://localhost:9001/v1/media/${imagePath}`
+}
 
 export const productsService = {
   // Get all products with filters
   getProducts: async (params: ProductSearchParams) => {
     const queryString = parseQueryParams(params)
-    const response = await productApi.get<ApiResponse<PaginatedResult<Product>>>(
-      `/product/getall?${queryString}`
-    )
+    const response = await productApi.get<ProductsResponse>(`/product/getall?${queryString}`)
     return response.data.result
   },
 
   // Get product detail by ID
-  getProductDetail: async (productId: string) => {
-    const response = await productApi.get<ApiResponse<{ data: ProductDetail }>>(
+  getProductDetail: async (productId: string): Promise<ProductDetail> => {
+    const response = await productApi.get<ProductDetailResponse>(
       `/product/getdetail_with_id/${productId}`
     )
     return response.data.result.data
   },
 
-  // Get SKU by ID
-  getSku: async (skuId: string) => {
-    const response = await productApi.get<ApiResponse<{ data: ProductSku }>>(
-      `/product/getsku/${skuId}`
-    )
-    return response.data.result.data
-  },
-
-  // Create product (placeholder - implement based on actual API)
-  createProduct: async (data: Partial<Product>) => {
-    const response = await productApi.post<ApiResponse<Product>>(
-      '/product/create',
-      data
-    )
-    return response.data.result
-  },
-
-  // Update product (placeholder - implement based on actual API)
-  updateProduct: async (productId: string, data: Partial<Product>) => {
-    const response = await productApi.put<ApiResponse<Product>>(
-      `/product/update/${productId}`,
-      data
-    )
-    return response.data.result
-  },
-
-  // Delete product (placeholder - implement based on actual API)
-  deleteProduct: async (productId: string) => {
-    const response = await productApi.delete<ApiResponse<boolean>>(
-      `/product/delete/${productId}`
-    )
+  // Delete product
+  deleteProduct: async (productId: string): Promise<boolean> => {
+    const response = await productApi.delete(`/product/delete/${productId}`)
     return response.data.result
   },
 }

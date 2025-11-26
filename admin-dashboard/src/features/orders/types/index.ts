@@ -1,9 +1,12 @@
+// features/orders/types/index.ts
+
 export type OrderStatus =
-  | 'PENDING'
+  | 'AWAITING_PAYMENT'
   | 'PROCESSING'
   | 'SHIPPED'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'REFUNDED'
 
 export interface Order {
   order_id: string
@@ -20,7 +23,7 @@ export interface Order {
   site_shipping_voucher_discount: number
   shipping_address: ShippingAddress
   payment_method: PaymentMethod
-  note: string
+  note: string | null
   created_at: string
   updated_at: string
 }
@@ -42,6 +45,21 @@ export interface PaymentMethod {
   is_active: boolean
 }
 
+export interface OrderItem {
+  item_id: string
+  product_id: string
+  sku_id: string
+  quantity: number
+  original_unit_price: number
+  final_unit_price: number
+  total_price: number
+  reviewed: boolean
+  product_name: string
+  product_image: string
+  sku_attributes: string
+  promotions_snapshot: Record<string, unknown> | null
+}
+
 export interface ShopOrder {
   shop_order_id: string
   shop_order_code: string
@@ -55,6 +73,8 @@ export interface ShopOrder {
   shop_voucher_discount: number
   shipping_method: string
   tracking_code: string
+  site_order_discount: number
+  site_shipping_discount: number
   items: OrderItem[]
   created_at: string
   updated_at: string
@@ -65,37 +85,52 @@ export interface ShopOrder {
   cancelled_at: string | null
 }
 
-export interface OrderItem {
-  item_id: string
-  product_id: string
-  sku_id: string
-  quantity: number
-  original_unit_price: number
-  final_unit_price: number
-  total_price: number
-  product_name: string
-  product_image: string
-  sku_attributes: string
-  promotions_snapshot: Record<string, unknown>
-}
-
 export interface OrderWithShop {
   order: Order
   order_shop: ShopOrder
 }
 
 export interface OrderSearchParams {
-  status?: string
+  // Status filter
+  status?: OrderStatus
+  
+  // Shop filter
   shop_id?: string
+  
+  // Amount filters
   min_amount?: number
   max_amount?: number
+  
+  // Date range filters
   created_from?: string
   created_to?: string
   paid_from?: string
   paid_to?: string
+  processing_from?: string
+  processing_to?: string
+  shipped_from?: string
+  shipped_to?: string
+  completed_from?: string
+  completed_to?: string
+  cancelled_from?: string
+  cancelled_to?: string
+  
+  // Search
+  order_code?: string
+  user_id?: string
+  tracking_code?: string
+  
+  // Voucher filters
+  has_site_voucher?: boolean
+  has_shop_voucher?: boolean
+  site_voucher_code?: string
+  shop_voucher_code?: string
+  
+  // Pagination & sorting
   page?: number
   page_size?: number
-  sort_by?: string
+  sort_by?: 'created_at' | 'grand_total' | 'updated_at' | 'paid_at'
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface OrdersResponse {
@@ -104,4 +139,14 @@ export interface OrdersResponse {
   pageSize: number
   totalElements: number
   totalPages: number
+}
+
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus
+  note?: string
+}
+
+export interface CancelOrderRequest {
+  reason: string
+  refund_amount?: number
 }
