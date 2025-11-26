@@ -29,6 +29,9 @@ export function useShopDetail(shopId: string) {
   })
 }
 
+// Alias for useShopDetail
+export const useShop = useShopDetail
+
 export function usePendingShops(params: { pageNumber: number; pageSize: number } = { pageNumber: 1, pageSize: 20 }) {
   return useQuery({
     queryKey: shopKeys.pendingList(params),
