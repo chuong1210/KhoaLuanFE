@@ -417,7 +417,7 @@ export default function AnalyticsDashboardPage() {
               <Button
                 onClick={handleExport}
                 size="lg"
-                className="bg-white hover:bg-white/95 text-[#FF6B35] font-bold rounded-2xl px-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                className="bg-white hover:bg-white/95 text-[#ffffff] font-bold rounded-2xl px-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
               >
                 <Download className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Tải báo cáo</span>

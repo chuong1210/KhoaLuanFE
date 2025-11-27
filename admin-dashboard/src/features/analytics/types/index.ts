@@ -123,3 +123,40 @@ export interface AnalyticsSearchParams {
   limit?: number
   offset?: number
 }
+
+// features/analytics/types.ts
+
+// Dữ liệu tổng quan
+export interface AIAnalyticsSummary {
+  total_impressions: number
+  total_clicks: number
+  total_orders: number
+  total_revenue: number
+  ctr: number
+  conversion_rate: number
+}
+
+// Dữ liệu biểu đồ theo ngày
+export interface AITrendData {
+  date: string
+  impressions: number
+  clicks: number
+  orders: number
+  revenue: number
+}
+
+// Dữ liệu hiệu quả theo thuật toán
+export interface AIAlgoPerformance {
+  rec_type: string
+  clicks: number
+  revenue: number
+}
+
+// Response tổng từ API Dashboard
+export interface AIDashboardResponse {
+  success: boolean
+  period: string
+  summary: AIAnalyticsSummary
+  trend_chart: AITrendData[]
+  algorithm_performance: AIAlgoPerformance[]
+}

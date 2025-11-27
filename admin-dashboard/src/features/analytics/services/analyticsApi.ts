@@ -11,7 +11,8 @@ import type {
   VoucherPerformance,
   AnalyticsSearchParams,
 } from '../types'
-
+import { aiApi } from '@/lib/api'
+import type { AIDashboardResponse } from '../types'
 export const analyticsService = {
   // Platform Overview
   getPlatformOverview: async (params: { start_date: string; end_date: string }) => {
@@ -110,4 +111,32 @@ export const analyticsService = {
     )
     return response.data.result
   },
+
+
+  // 1. Lấy dữ liệu Dashboard từ AI Service
+  getAIDashboardStats: async (days: number = 30) => {
+    const response = await aiApi.get<AIDashboardResponse>(`/api/analytics/dashboard?days=${days}`)
+    return response.data
+  },
+
+  // 2. Xuất báo cáo (Download file)
+  exportAIReport: async (days: number = 30, format: 'csv' | 'pdf' = 'csv') => {
+    const response = await aiApi.get(`/api/analytics/export?days=${days}&format=${format}`, {
+      responseType: 'blob', // Quan trọng: Để nhận file binary
+    })
+    
+    // Tạo link download ảo
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Đặt tên file
+    const dateStr = new Date().toISOString().split('T')[0]
+    link.setAttribute('download', `recommendation_report_${days}days_${dateStr}.${format}`)
+    
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
 }

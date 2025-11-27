@@ -8,6 +8,8 @@ export const API_URLS = {
   SHOP: process.env.NEXT_PUBLIC_SHOP_API || 'http://localhost:8000/api',
   ANALYTICS: process.env.NEXT_PUBLIC_ANALYTICS_API || 'http://localhost:9004/v1',
   AUTH: process.env.NEXT_PUBLIC_AUTH_API || 'https://lemarchenoble.id.vn/api/v1/identity',
+    AI_RECOMMENDATION: process.env.NEXT_PUBLIC_AI_API || 'http://localhost:5000', 
+
 }
 
 // Create axios instances for different services
@@ -17,7 +19,12 @@ export const productApi = axios.create({
     'Content-Type': 'application/json',
   },
 })
-
+export const aiApi = axios.create({
+  baseURL: API_URLS.AI_RECOMMENDATION,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 export const orderApi = axios.create({
   baseURL: API_URLS.ORDER,
   headers: {
@@ -75,7 +82,7 @@ const handleResponseError = (error: AxiosError) => {
 
 // Apply interceptors to all instances
 // Lưu ý: Nếu authApi cần dùng token cho các endpoint như /profile hay /logout, hãy thêm authApi vào mảng này.
-const apiInstances = [productApi, orderApi, shopApi, analyticsApi]
+const apiInstances = [productApi, orderApi, shopApi, analyticsApi, authApi, aiApi]
 
 apiInstances.forEach((instance) => {
   instance.interceptors.request.use(addAuthToken)

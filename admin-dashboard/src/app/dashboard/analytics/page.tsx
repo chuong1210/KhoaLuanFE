@@ -14,6 +14,10 @@ import {
   ArrowUpRight,
   Download,
   FileSpreadsheet,
+  Zap,
+  Eye,
+  MousePointerClick,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +45,9 @@ import {
   useRevenueTimeseries,
   usePlatformShops,
   useVoucherPerformance,
+  useAIDashboard, // Hook mới
 } from "@/features/analytics/hooks/useAnalytics";
+import { analyticsService } from "@/features/analytics/services/analyticsApi"; // Service mới
 import { formatCurrency, formatNumber, cn } from "@/lib/utils";
 import {
   exportAnalyticsOverview,
@@ -76,6 +82,7 @@ function MetricCard({
     green: "from-green-500 to-green-400",
     blue: "from-blue-500 to-blue-400",
     purple: "from-purple-500 to-purple-400",
+    indigo: "from-indigo-500 to-indigo-400", // Thêm màu cho AI
   };
 
   if (isLoading) {
@@ -94,7 +101,8 @@ function MetricCard({
         <div
           className={cn(
             "p-6 bg-gradient-to-br text-white",
-            colorClasses[color as keyof typeof colorClasses]
+            colorClasses[color as keyof typeof colorClasses] ||
+              colorClasses.orange
           )}
         >
           <div className="flex items-start justify-between">
@@ -141,6 +149,7 @@ export default function AnalyticsPage() {
 
   const dateParams = { start_date: startDate, end_date: endDate };
 
+  // 1. Existing Hooks
   const { data: overview, isLoading: overviewLoading } =
     usePlatformOverview(dateParams);
   const { data: revenueData, isLoading: revenueLoading } =
@@ -151,7 +160,22 @@ export default function AnalyticsPage() {
   const { data: voucherPerf, isLoading: voucherLoading } =
     useVoucherPerformance(dateParams);
 
-  // Export handlers
+  // 2. New AI Hook
+  const { data: aiData, isLoading: aiLoading } = useAIDashboard(dateRange);
+  const aiSummary = aiData?.summary;
+
+  // --- Map dữ liệu AI sang format cho RevenueChart ---
+  const aiChartData =
+    aiData?.trend_chart.map((item) => ({
+      date: item.date,
+      // Tận dụng props của RevenueChart (total_gmv => Doanh thu AI, platform_revenue => Đơn hàng * const)
+      // Ở đây map Doanh thu AI vào đường màu cam (GMV)
+      total_gmv: item.revenue,
+      platform_revenue: 0, // Có thể map lượt click nếu muốn vẽ thêm đường
+      platform_profit: 0,
+    })) || [];
+
+  // --- Export Handlers ---
   const handleExportOverview = () => {
     if (!overview) {
       toast.error("Không có dữ liệu để xuất");
@@ -201,6 +225,17 @@ export default function AnalyticsPage() {
       dateRange
     );
     toast.success("Xuất báo cáo tổng hợp thành công!");
+  };
+
+  // Handler xuất báo cáo AI (CSV/PDF)
+  const handleExportAI = async (format: "csv" | "pdf") => {
+    try {
+      const daysNum = parseInt(dateRange.replace("days", "")) || 30;
+      await analyticsService.exportAIReport(daysNum, format);
+      toast.success(`Đang tải xuống báo cáo AI (${format.toUpperCase()})`);
+    } catch (error) {
+      toast.error("Xuất báo cáo thất bại");
+    }
   };
 
   return (
@@ -266,7 +301,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Overview Metrics */}
+      {/* Overview Metrics (Platform) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Tổng GMV"
@@ -322,6 +357,11 @@ export default function AnalyticsPage() {
             <TabsTrigger value="revenue">Doanh thu</TabsTrigger>
             <TabsTrigger value="shops">Cửa hàng</TabsTrigger>
             <TabsTrigger value="vouchers">Voucher</TabsTrigger>
+            {/* NEW AI TAB */}
+            <TabsTrigger value="ai" className="gap-2">
+              <Zap className="h-4 w-4" />
+              AI Gợi ý
+            </TabsTrigger>
           </TabsList>
 
           {/* Quick Export for Active Tab */}
@@ -343,9 +383,31 @@ export default function AnalyticsPage() {
               Xuất Excel
             </Button>
           )}
+
+          {/* NEW Export for AI Tab */}
+          {activeTab === "ai" && aiData && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Xuất Báo Cáo AI
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportAI("csv")}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                  File Excel (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportAI("pdf")}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  File PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
-        {/* Revenue Tab */}
+        {/* Revenue Tab Content */}
         <TabsContent value="revenue" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
@@ -421,7 +483,7 @@ export default function AnalyticsPage() {
           </div>
         </TabsContent>
 
-        {/* Shops Tab */}
+        {/* Shops Tab Content */}
         <TabsContent value="shops" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -496,7 +558,7 @@ export default function AnalyticsPage() {
           </div>
         </TabsContent>
 
-        {/* Vouchers Tab */}
+        {/* Vouchers Tab Content */}
         <TabsContent value="vouchers" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-gradient-soft-glow hover:shadow-lg transition-all">
@@ -652,6 +714,114 @@ export default function AnalyticsPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ======================================================== */}
+        {/* NEW: AI RECOMMENDATION TAB CONTENT                       */}
+        {/* ======================================================== */}
+        <TabsContent value="ai" className="space-y-4">
+          {/* AI Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Lượt hiển thị"
+              value={formatNumber(aiSummary?.total_impressions || 0)}
+              subValue="Sản phẩm được AI đề xuất"
+              icon={Eye}
+              color="blue"
+              isLoading={aiLoading}
+            />
+            <MetricCard
+              title="Tỷ lệ Click (CTR)"
+              value={`${aiSummary?.ctr || 0}%`}
+              subValue={`${formatNumber(aiSummary?.total_clicks || 0)} clicks`}
+              icon={MousePointerClick}
+              color="purple"
+              isLoading={aiLoading}
+            />
+            <MetricCard
+              title="Tỷ lệ Chuyển đổi (CVR)"
+              value={`${aiSummary?.conversion_rate || 0}%`}
+              subValue={`${formatNumber(
+                aiSummary?.total_orders || 0
+              )} đơn hàng`}
+              icon={ShoppingCart}
+              color="green"
+              isLoading={aiLoading}
+            />
+            <MetricCard
+              title="Doanh thu từ AI"
+              value={formatCurrency(aiSummary?.total_revenue || 0)}
+              subValue="Tạo ra từ các gợi ý"
+              icon={Zap}
+              color="orange"
+              isLoading={aiLoading}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* AI Trend Chart (Reusing RevenueChart Component) */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-indigo-600" />
+                  Xu hướng Doanh thu từ Gợi ý
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RevenueChart
+                  data={aiChartData as any} // Ép kiểu tạm thời để tái sử dụng component
+                  isLoading={aiLoading}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Algorithm Performance List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  Hiệu quả Thuật toán
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {aiLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {aiData?.algorithm_performance.map((algo, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100"
+                      >
+                        <div>
+                          <p className="font-medium text-sm capitalize text-slate-700">
+                            {algo.rec_type.replace("_", " ")}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatNumber(algo.clicks)} clicks
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-indigo-600 text-sm">
+                            {formatCurrency(algo.revenue)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {!aiData?.algorithm_performance.length && (
+                      <p className="text-center text-gray-500 text-sm py-4">
+                        Chưa có dữ liệu phân tích
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

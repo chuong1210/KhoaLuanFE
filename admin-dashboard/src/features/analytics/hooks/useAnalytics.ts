@@ -20,8 +20,19 @@ export const analyticsKeys = {
     [...analyticsKeys.all, 'shopDetail', shopId, params] as const,
   voucherPerformance: (params: { start_date: string; end_date: string }) =>
     [...analyticsKeys.all, 'voucherPerformance', params] as const,
+    aiDashboard: (days: string) => ['analytics', 'ai', days] as const,
+
 }
 
+export function useAIDashboard(days: string) {
+  // Convert "30days" -> 30
+  const daysNum = parseInt(days.replace('days', '')) || 30
+  
+  return useQuery({
+    queryKey: analyticsKeys.aiDashboard(days),
+    queryFn: () => analyticsService.getAIDashboardStats(daysNum),
+  })
+}
 export function usePlatformOverview(params: { start_date: string; end_date: string }) {
   return useQuery({
     queryKey: analyticsKeys.overview(params),

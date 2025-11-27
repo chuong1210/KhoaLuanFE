@@ -1,3 +1,4 @@
+// features/products/services/productsApi.ts - UPDATED
 import axios from 'axios'
 import type {
   Product,
@@ -7,14 +8,6 @@ import type {
   ProductDetailResponse,
 } from '../types'
 import { productApi, ApiResponse } from '@/lib/api'
-
-// Create axios instance
-// const productApi = axios.create({
-//   baseURL: 'http://localhost:9001/v1/product',
-//   headers: {
-//     'Content-Type': 'application/json',
-//   },
-// })
 
 // Helper function to parse query params
 const parseQueryParams = (params: Record<string, any>): string => {
@@ -63,5 +56,29 @@ export const productsService = {
   deleteProduct: async (productId: string): Promise<boolean> => {
     const response = await productApi.delete(`/product/delete/${productId}`)
     return response.data.result
+  },
+
+  // Get pending products for approval
+  getPendingProducts: async (params: ProductSearchParams) => {
+    const queryString = parseQueryParams({ ...params, status: 'Pending' })
+    const response = await productApi.get<ProductsResponse>(`/product/getall?${queryString}`)
+    return response.data.result
+  },
+
+  // Approve or reject product
+  approveProduct: async (productId: string, approve: boolean) => {
+    const formData = new FormData()
+    formData.append('product', JSON.stringify({ approval_product: approve }))
+    
+    const response = await productApi.put(
+      `/product/update/${productId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return response.data
   },
 }
