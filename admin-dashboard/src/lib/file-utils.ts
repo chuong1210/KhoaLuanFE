@@ -1,4 +1,11 @@
 // lib/utils/file-utils.ts
+const MEDIA_API_BASE = "http://localhost:9001/v1/media"
+
+  export function getImageUrl (fileName: string | null | undefined): string  {
+    if (!fileName) return `${MEDIA_API_BASE}/placeholder-image.jpg`; // Ảnh mặc định nếu null
+    if (fileName.startsWith("http") || fileName.startsWith("https") ) return fileName; // Nếu đã là link full thì giữ nguyên
+    return `${MEDIA_API_BASE}/${fileName}`;
+  }
 
 /**
  * Check if value is a File object (works in both client and SSR)

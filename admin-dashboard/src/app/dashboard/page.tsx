@@ -31,6 +31,8 @@ import {
   usePlatformShops,
 } from "@/features/analytics/hooks/useAnalytics";
 import { formatCurrency, formatNumber, cn } from "@/lib/utils";
+import { CompactBannerCarousel } from "@/components/banner/banner-carousel";
+import { useActiveBanners } from "@/features/banners/hooks/useActiveBanners";
 
 interface StatCardProps {
   title: string;
@@ -133,6 +135,7 @@ export default function DashboardPage() {
   const { data: shopsData, isLoading: shopsLoading } = usePlatformShops({
     limit: 10,
   });
+  const { data: banners, isLoading: bannersLoading } = useActiveBanners("HOME");
 
   return (
     <div className="space-y-6 animate-in">
@@ -153,6 +156,12 @@ export default function DashboardPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Banner Carousel */}
+      <CompactBannerCarousel
+        banners={banners || []}
+        isLoading={bannersLoading}
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,5 +1,5 @@
 // services/product-service.ts - Product API service
-import { apiClient } from "@/lib/api/axios-instance"
+import axiosInstance, { apiClient } from "@/lib/api/axios-instance"
 import type {
   Product,
   ProductDetail,
@@ -102,89 +102,93 @@ export const productService = {
     return response.data.result.data
   },
 
-  // Create product
-  // Create product (Multipart)
+  // Create product with multipart/form-data
   createProduct: async (
     data: CreateProductPayload,
     files: {
       image: File;
       media?: File[];
-      option_value_images?: File[]; // Ảnh của các giá trị phân loại (VD: Ảnh màu đỏ, ảnh màu xanh)
+      option_value_images?: File[];
     }
   ): Promise<Product> => {
     const formData = new FormData();
 
-    // 1. Append JSON data
-    // Backend yêu cầu key là "product"
+    // 1. Append product data as JSON string (CRITICAL: Backend expects "product" key)
     formData.append("product", JSON.stringify(data));
 
-    // 2. Append Main Image
+    // 2. Append main image (key: "image")
     formData.append("image", files.image);
 
-    // 3. Append Media Gallery
+    // 3. Append media files as array (key: "media")
     if (files.media && files.media.length > 0) {
       files.media.forEach((file) => {
         formData.append("media", file);
       });
     }
 
-    // 4. Append Option Value Images
-    // Logic: Backend nhận mảng file, thứ tự file này sẽ map với thứ tự option_value có hình ảnh trong JSON
+    // 4. Append option_value_images with indexed keys: option_value_images[0], option_value_images[1], ...
     if (files.option_value_images && files.option_value_images.length > 0) {
-      files.option_value_images.forEach((file) => {
-        // Dùng key array [] để backend nhận dạng list
-        formData.append("option_value_images", file);
+      files.option_value_images.forEach((file, index) => {
+        formData.append(`option_value_images[${index}]`, file);
       });
     }
 
-    const response = await apiClient.post(
+    const response = await axiosInstance.post<{ result: Product }>(
       `${PRODUCT_API_BASE}/create`,
       formData,
       {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       }
     );
+
     return response.data.result;
   },
 
   // Update product
   updateProduct: async (
-    productId: string,
+    id: string,
     data: UpdateProductPayload,
     files?: {
-      image?: File
-      media?: File[]
-      option_value_images?: File[]
+      image?: File;
+      media?: File[];
+      option_value_images?: File[];
     }
   ): Promise<Product> => {
-    const formData = new FormData()
+    const formData = new FormData();
 
-    // Add product data as JSON string
-    formData.append('product', JSON.stringify(data))
+    // Append product data as JSON string
+    formData.append("product", JSON.stringify(data));
 
-    // Add files if provided
+    // Append files if provided
     if (files?.image) {
-      formData.append('Image', files.image)
+      formData.append("image", files.image);
     }
 
     if (files?.media && files.media.length > 0) {
-      files.media.forEach(file => {
-        formData.append('Media', file)
-      })
+      files.media.forEach((file) => {
+        formData.append("media", file);
+      });
     }
 
     if (files?.option_value_images && files.option_value_images.length > 0) {
       files.option_value_images.forEach((file, index) => {
-        formData.append(`option_value_images[${index}]`, file)
-      })
+        formData.append(`option_value_images[${index}]`, file);
+      });
     }
 
-    const response = await apiClient.put(
-      `${PRODUCT_API_BASE}/update/${productId}`,
+    const response = await axiosInstance.put<{ result: Product }>(
+      `${PRODUCT_API_BASE}/${id}`,
       formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    )
-    return response.data.result
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data.result;
   },
 
   // Delete product

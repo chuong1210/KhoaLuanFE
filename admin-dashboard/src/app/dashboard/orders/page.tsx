@@ -845,12 +845,13 @@ export default function OrdersPage() {
                       >
                         <div className="relative h-16 w-16 rounded overflow-hidden bg-white flex-shrink-0">
                           {item.product_image ? (
-                            <Image
-                              src={item.product_image}
-                              alt={item.product_name}
-                              fill
-                              className="object-cover"
-                            />
+                            <div className="relative w-full h-full">
+                              <img
+                                src={item.product_image}
+                                alt={item.product_name}
+                                className="object-cover w-full h-full absolute inset-0"
+                              />
+                            </div>
                           ) : (
                             <Package className="h-full w-full p-4 text-orange-peach" />
                           )}

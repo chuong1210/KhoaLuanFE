@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Search,
   Ticket,
@@ -15,8 +16,6 @@ import {
   Calendar,
   Filter,
   X,
-  Download,
-  Store,
 } from "lucide-react";
 import { ShopSelect } from "@/components/ui/shop-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,12 +46,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  VoucherDetailDialog,
+  VoucherEditDialog,
+} from "@/components/voucher/voucher-dialog";
 import {
   useVouchers,
   useCreateVoucher,
@@ -64,8 +74,70 @@ import type {
   VoucherSearchParams,
   CreateVoucherRequest,
 } from "@/features/vouchers/types";
-import { voucherSchema, type VoucherFormData } from "@/lib/validators";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+// Form data type
+interface VoucherFormData {
+  name: string;
+  voucher_code: string;
+  discount_type: "PERCENTAGE" | "FIXED_AMOUNT";
+  discount_value: number;
+  is_shop_voucher: boolean; // Checkbox: true = Shop voucher, false = Platform voucher
+  shop_id?: string | null;
+  max_discount_amount?: number;
+  applies_to_type: "ORDER_TOTAL" | "SHIPPING_FEE";
+  min_purchase_amount: number;
+  audience_type: "PUBLIC" | "ASSIGNED";
+  start_date: string;
+  end_date: string;
+  total_quantity: number;
+  max_usage_per_user: number;
+  user_use?: string[];
+}
+
+// Validation schema
+const voucherFormSchema = z
+  .object({
+    name: z.string().min(1, "Tên voucher là bắt buộc"),
+    voucher_code: z.string().min(1, "Mã voucher là bắt buộc"),
+    discount_type: z.enum(["PERCENTAGE", "FIXED_AMOUNT"]),
+    discount_value: z.number().min(0, "Giá trị giảm phải lớn hơn 0"),
+    is_shop_voucher: z.boolean(),
+    shop_id: z.string().nullable().optional(),
+    max_discount_amount: z.number().optional(),
+    applies_to_type: z.enum(["ORDER_TOTAL", "SHIPPING_FEE"]),
+    min_purchase_amount: z.number().min(0),
+    audience_type: z.enum(["PUBLIC", "ASSIGNED"]),
+    start_date: z.string().min(1, "Ngày bắt đầu là bắt buộc"),
+    end_date: z.string().min(1, "Ngày kết thúc là bắt buộc"),
+    total_quantity: z.number().min(1, "Số lượng phải lớn hơn 0"),
+    max_usage_per_user: z.number().min(1),
+    user_use: z.array(z.string()).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.is_shop_voucher) {
+        return !!data.shop_id;
+      }
+      return true;
+    },
+    {
+      message: "Vui lòng chọn shop",
+      path: ["shop_id"],
+    }
+  );
+
+// Helper function to convert datetime-local to ISO 8601 with timezone
+const formatDateTimeToISO = (dateTimeLocal: string): string => {
+  if (!dateTimeLocal) return "";
+
+  // datetime-local format: "2025-11-14T02:17"
+  // Need to convert to: "2025-11-14T02:17:00Z" (ISO 8601 with timezone)
+
+  const date = new Date(dateTimeLocal);
+  return date.toISOString(); // This gives "2025-11-14T02:17:00.000Z"
+};
 
 export default function VouchersPage() {
   const [searchParams, setSearchParams] = useState<VoucherSearchParams>({
@@ -75,6 +147,7 @@ export default function VouchersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
 
   const { data, isLoading } = useVouchers(searchParams);
@@ -82,42 +155,74 @@ export default function VouchersPage() {
   const deleteVoucher = useDeleteVoucher();
   const toggleStatus = useToggleVoucherStatus();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<VoucherFormData>({
-    resolver: zodResolver(voucherSchema),
+  const form = useForm<VoucherFormData>({
+    resolver: zodResolver(voucherFormSchema),
     defaultValues: {
+      voucher_code: "",
+      name: "",
       discount_type: "PERCENTAGE",
+      discount_value: 0,
       applies_to_type: "ORDER_TOTAL",
-      audience_type: "PUBLIC",
       min_purchase_amount: 0,
-      max_usage_per_user: 1,
+      audience_type: "PUBLIC",
+      start_date: "",
+      end_date: "",
       total_quantity: 100,
+      max_usage_per_user: 1,
+      is_shop_voucher: false,
+      shop_id: null,
     },
   });
 
-  const discountType = watch("discount_type");
+  const discountType = form.watch("discount_type");
+  const isShopVoucher = form.watch("is_shop_voucher");
 
   const handlePageChange = (page: number) => {
     setSearchParams((prev) => ({ ...prev, page }));
   };
 
   const onSubmit = (data: VoucherFormData) => {
-    const request: CreateVoucherRequest = {
-      ...data,
-      max_discount_amount: data.max_discount_amount || undefined,
-    };
-    createVoucher.mutate(request, {
-      onSuccess: () => {
-        setIsCreateOpen(false);
-        reset();
-      },
-    });
+    try {
+      // Transform form data to API request format
+      const request: CreateVoucherRequest = {
+        name: data.name,
+        voucher_code: data.voucher_code,
+        discount_type: data.discount_type,
+        discount_value: data.discount_value,
+        // Admin tạo: is_shop_voucher = false → shop_id = null (Platform)
+        // Admin tạo cho shop: is_shop_voucher = true → shop_id = number (Shop)
+        shop_id:
+          data.is_shop_voucher && data.shop_id ? parseInt(data.shop_id) : null,
+        applies_to_type: data.applies_to_type,
+        min_purchase_amount: data.min_purchase_amount,
+        audience_type: data.audience_type,
+        // Convert datetime-local to ISO 8601 with timezone
+        start_date: formatDateTimeToISO(data.start_date),
+        end_date: formatDateTimeToISO(data.end_date),
+        total_quantity: data.total_quantity,
+        max_usage_per_user: data.max_usage_per_user,
+        max_discount_amount: data.max_discount_amount || undefined,
+        user_use:
+          data.user_use && data.user_use.length > 0 ? data.user_use : undefined,
+      };
+
+      console.log("API Request:", request); // Debug log
+
+      createVoucher.mutate(request, {
+        onSuccess: () => {
+          setIsCreateOpen(false);
+          form.reset();
+          toast.success("Tạo voucher thành công!");
+        },
+        onError: (error: any) => {
+          console.error("Create voucher error:", error);
+          toast.error(error?.message || "Có lỗi xảy ra khi tạo voucher");
+        },
+      });
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast.error("Có lỗi xảy ra khi xử lý form");
+    }
   };
 
   const handleDeleteVoucher = (voucherId: string) => {
@@ -167,18 +272,19 @@ export default function VouchersPage() {
             Tạo và quản lý các mã giảm giá trên sàn
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="bg-orange-vivid hover:bg-orange-deep"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Tạo voucher mới
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Same as before */}
       <Card>
         <CardContent className="p-4 space-y-4">
-          {/* Basic Filters */}
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -195,7 +301,6 @@ export default function VouchersPage() {
               />
             </div>
 
-            {/* Discount Type */}
             <Select
               value={searchParams.discount_type || "all"}
               onValueChange={(value) =>
@@ -219,7 +324,6 @@ export default function VouchersPage() {
               </SelectContent>
             </Select>
 
-            {/* Applies To */}
             <Select
               value={searchParams.applies_to_type || "all"}
               onValueChange={(value) =>
@@ -243,7 +347,6 @@ export default function VouchersPage() {
               </SelectContent>
             </Select>
 
-            {/* Status */}
             <Select
               value={
                 searchParams.is_active === undefined
@@ -275,7 +378,6 @@ export default function VouchersPage() {
               </SelectContent>
             </Select>
 
-            {/* Advanced Filters Toggle */}
             <Button
               variant="outline"
               onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
@@ -302,11 +404,9 @@ export default function VouchersPage() {
             )}
           </div>
 
-          {/* Advanced Filters */}
           <Collapsible open={isAdvancedFiltersOpen}>
             <CollapsibleContent className="space-y-4 pt-4 border-t">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Name Search */}
                 <div>
                   <Label className="text-sm">Tên voucher</Label>
                   <Input
@@ -323,7 +423,6 @@ export default function VouchersPage() {
                   />
                 </div>
 
-                {/* Shop */}
                 <div>
                   <Label className="text-sm">Shop</Label>
                   <ShopSelect
@@ -340,7 +439,6 @@ export default function VouchersPage() {
                   />
                 </div>
 
-                {/* Audience Type */}
                 <div>
                   <Label className="text-sm">Đối tượng</Label>
                   <Select
@@ -366,114 +464,13 @@ export default function VouchersPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Start Date Range */}
-                <div>
-                  <Label className="text-sm">Ngày bắt đầu (từ)</Label>
-                  <Input
-                    type="date"
-                    value={searchParams.start_date_from || ""}
-                    onChange={(e) =>
-                      setSearchParams((prev) => ({
-                        ...prev,
-                        start_date_from: e.target.value || undefined,
-                        page: 1,
-                      }))
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm">Ngày bắt đầu (đến)</Label>
-                  <Input
-                    type="date"
-                    value={searchParams.start_date_to || ""}
-                    onChange={(e) =>
-                      setSearchParams((prev) => ({
-                        ...prev,
-                        start_date_to: e.target.value || undefined,
-                        page: 1,
-                      }))
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                {/* End Date Range */}
-                <div>
-                  <Label className="text-sm">Ngày kết thúc (từ)</Label>
-                  <Input
-                    type="date"
-                    value={searchParams.end_date_from || ""}
-                    onChange={(e) =>
-                      setSearchParams((prev) => ({
-                        ...prev,
-                        end_date_from: e.target.value || undefined,
-                        page: 1,
-                      }))
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm">Ngày kết thúc (đến)</Label>
-                  <Input
-                    type="date"
-                    value={searchParams.end_date_to || ""}
-                    onChange={(e) =>
-                      setSearchParams((prev) => ({
-                        ...prev,
-                        end_date_to: e.target.value || undefined,
-                        page: 1,
-                      }))
-                    }
-                    className="mt-1"
-                  />
-                </div>
-
-                {/* Sort By */}
-                <div>
-                  <Label className="text-sm">Sắp xếp theo</Label>
-                  <Select
-                    value={searchParams.sort_by || "created_at_desc"}
-                    onValueChange={(value) =>
-                      setSearchParams((prev) => ({
-                        ...prev,
-                        sort_by: value as any,
-                        page: 1,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="created_at_desc">Mới nhất</SelectItem>
-                      <SelectItem value="created_at_asc">Cũ nhất</SelectItem>
-                      <SelectItem value="end_date_asc">
-                        Hết hạn sớm nhất
-                      </SelectItem>
-                      <SelectItem value="end_date_desc">
-                        Hết hạn muộn nhất
-                      </SelectItem>
-                      <SelectItem value="start_date_asc">
-                        Bắt đầu sớm nhất
-                      </SelectItem>
-                      <SelectItem value="start_date_desc">
-                        Bắt đầu muộn nhất
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </CollapsibleContent>
           </Collapsible>
         </CardContent>
       </Card>
 
-      {/* Vouchers Table */}
+      {/* Vouchers Table - Same structure as before */}
       <Card className="table-container">
         <CardHeader className="border-b border-orange-peach/20">
           <CardTitle className="flex items-center gap-2">
@@ -522,15 +519,15 @@ export default function VouchersPage() {
                     </TableCell>
                     <TableCell>
                       <p className="font-medium">{voucher.name}</p>
-                      {voucher.owner_type === "SHOP" && (
+                      {voucher.shop_id && (
                         <Badge variant="info" className="mt-1">
                           Shop Voucher
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {voucher.owner_type === "SHOP" ? (
-                        <span className="text-sm">{voucher.owner_id}</span>
+                      {voucher.shop_id ? (
+                        <span className="text-sm">Shop #{voucher.shop_id}</span>
                       ) : (
                         <Badge variant="processing">Platform</Badge>
                       )}
@@ -644,175 +641,399 @@ export default function VouchersPage() {
         </CardContent>
       </Card>
 
-      {/* Create Voucher Dialog - Same as before */}
+      {/* Create Voucher Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        {/* ... Previous create dialog content ... */}
-      </Dialog>
-
-      {/* Voucher Detail Dialog */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Chi tiết voucher</DialogTitle>
+            <DialogTitle>Tạo voucher mới</DialogTitle>
+            <DialogDescription>
+              Điền thông tin để tạo mã giảm giá mới. Mặc định tạo voucher
+              Platform (do sàn tài trợ).
+            </DialogDescription>
           </DialogHeader>
-          {selectedVoucher && (
-            <div className="space-y-6">
-              <Card variant="gradient">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-orange-vivid font-mono">
-                        {selectedVoucher.voucher_code}
-                      </p>
-                      <p className="text-lg font-medium mt-1">
-                        {selectedVoucher.name}
-                      </p>
-                    </div>
-                    {getStatusBadge(selectedVoucher)}
-                  </div>
-                </CardContent>
-              </Card>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <Label className="text-sm text-gray-500">Giảm giá</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      {selectedVoucher.discount_type === "PERCENTAGE" ? (
-                        <>
-                          <Percent className="h-5 w-5 text-orange-vivid" />
-                          <span className="text-xl font-bold">
-                            {parseFloat(selectedVoucher.discount_value)}%
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="h-5 w-5 text-orange-vivid" />
-                          <span className="text-xl font-bold">
-                            {formatCurrency(
-                              parseFloat(selectedVoucher.discount_value)
-                            )}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Thông tin cơ bản</h3>
 
-                <Card>
-                  <CardContent className="p-4">
-                    <Label className="text-sm text-gray-500">Đã sử dụng</Label>
-                    <p className="text-xl font-bold mt-1">
-                      {selectedVoucher.used_quantity}/
-                      {selectedVoucher.total_quantity}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="voucher_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mã voucher *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="VD: SUMMER2024" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <Card>
-                  <CardContent className="p-4">
-                    <Label className="text-sm text-gray-500">Áp dụng cho</Label>
-                    <p className="text-lg font-medium mt-1">
-                      {selectedVoucher.applies_to_type === "ORDER_TOTAL"
-                        ? "Tổng đơn hàng"
-                        : "Phí vận chuyển"}
-                    </p>
-                  </CardContent>
-                </Card>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tên voucher *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="VD: Giảm giá mùa hè" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <Card>
-                  <CardContent className="p-4">
-                    <Label className="text-sm text-gray-500">
-                      Đơn tối thiểu
-                    </Label>
-                    <p className="text-lg font-bold mt-1">
-                      {formatCurrency(
-                        parseFloat(selectedVoucher.min_purchase_amount)
-                      )}
-                    </p>
-                  </CardContent>
-                </Card>
+                <FormField
+                  control={form.control}
+                  name="is_shop_voucher"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Tạo voucher cho shop cụ thể</FormLabel>
+                        <FormDescription>
+                          Bỏ chọn để tạo voucher Platform (mặc định). Chọn để
+                          tạo voucher cho shop.
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {isShopVoucher && (
+                  <FormField
+                    control={form.control}
+                    name="shop_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Chọn Shop *</FormLabel>
+                        <FormControl>
+                          <ShopSelect
+                            value={field.value || undefined}
+                            onValueChange={field.onChange}
+                            placeholder="Chọn shop..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
-              <Card>
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between">
-                    <Label className="text-sm text-gray-500">
-                      Thời gian hiệu lực:
-                    </Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500">Bắt đầu</p>
-                      <p className="font-medium">
-                        {formatDate(selectedVoucher.start_date)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Kết thúc</p>
-                      <p className="font-medium">
-                        {formatDate(selectedVoucher.end_date)}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Discount Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Thông tin giảm giá</h3>
 
-              <Card>
-                <CardContent className="p-4">
-                  <Label className="text-sm text-gray-500 block mb-2">
-                    Thông tin khác
-                  </Label>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Đối tượng:</span>
-                      <span className="font-medium">
-                        {selectedVoucher.audience_type === "PUBLIC"
-                          ? "Công khai"
-                          : "Chỉ định"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tối đa/người:</span>
-                      <span className="font-medium">
-                        {selectedVoucher.max_usage_per_user}
-                      </span>
-                    </div>
-                    {selectedVoucher.max_discount_amount?.Valid && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Giảm tối đa:</span>
-                        <span className="font-medium">
-                          {formatCurrency(
-                            parseFloat(
-                              selectedVoucher.max_discount_amount.String
-                            )
-                          )}
-                        </span>
-                      </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="discount_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Loại giảm giá *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="PERCENTAGE">
+                              Phần trăm (%)
+                            </SelectItem>
+                            <SelectItem value="FIXED_AMOUNT">
+                              Số tiền cố định (VNĐ)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Loại chủ sở hữu:</span>
-                      <span className="font-medium">
-                        {selectedVoucher.owner_type === "PLATFORM"
-                          ? "Platform"
-                          : "Shop"}
-                      </span>
-                    </div>
-                    {selectedVoucher.owner_type === "SHOP" && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Shop ID:</span>
-                        <span className="font-medium">
-                          {selectedVoucher.owner_id}
-                        </span>
-                      </div>
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="discount_value"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Giá trị giảm{" "}
+                          {discountType === "PERCENTAGE" ? "(%)" : "(VNĐ)"} *
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder={
+                              discountType === "PERCENTAGE"
+                                ? "VD: 10"
+                                : "VD: 50000"
+                            }
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="applies_to_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Áp dụng cho *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="ORDER_TOTAL">
+                              Tổng đơn hàng
+                            </SelectItem>
+                            <SelectItem value="SHIPPING_FEE">
+                              Phí vận chuyển
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="min_purchase_amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Đơn tối thiểu (VNĐ) *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="VD: 100000"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {discountType === "PERCENTAGE" && (
+                  <FormField
+                    control={form.control}
+                    name="max_discount_amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Giảm tối đa (VNĐ)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="VD: 50000"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : undefined
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Để trống nếu không giới hạn
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              {/* Usage Info */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Thông tin sử dụng</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="total_quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tổng số lượng *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="VD: 100"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="max_usage_per_user"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tối đa/người *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="VD: 1"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value))
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="audience_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Đối tượng *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="PUBLIC">Công khai</SelectItem>
+                          <SelectItem value="ASSIGNED">Chỉ định</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="start_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ngày bắt đầu *</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Chọn ngày giờ bắt đầu hiệu lực
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="end_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ngày kết thúc *</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Chọn ngày giờ hết hiệu lực
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateOpen(false);
+                    form.reset();
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createVoucher.isPending}
+                  className="bg-orange-vivid hover:bg-orange-deep"
+                >
+                  {createVoucher.isPending ? "Đang tạo..." : "Tạo voucher"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Detail Dialog */}
+      <VoucherDetailDialog
+        voucher={selectedVoucher}
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedVoucher(null);
+        }}
+        onEdit={() => {
+          setIsDetailOpen(false);
+          setIsEditOpen(true);
+        }}
+      />
+
+      {/* Edit Dialog */}
+      <VoucherEditDialog
+        voucher={selectedVoucher}
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedVoucher(null);
+        }}
+      />
     </div>
   );
 }
