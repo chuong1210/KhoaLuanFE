@@ -90,7 +90,7 @@ export default function BannersPage() {
         pageNumber: 1,
         pageSize: 30,
         // Chỉ gửi bannerType nếu khác "ALL"
-        bannerType: filterType === "ALL" ? undefined : filterType
+        bannerType: filterType === "ALL" ? undefined : filterType,
       }),
   });
 
@@ -129,7 +129,7 @@ export default function BannersPage() {
   };
 
   const getBannerTypeLabel = (type: string) => {
-    const found = BANNER_TYPES.find(t => t.value === type);
+    const found = BANNER_TYPES.find((t) => t.value === type);
     return found ? found.label : type;
   };
 
@@ -201,7 +201,11 @@ export default function BannersPage() {
         )}
 
         <div className="ml-auto text-sm text-muted-foreground">
-          Hiển thị: <span className="font-semibold text-orange-600">{banners.length}</span> kết quả
+          Hiển thị:{" "}
+          <span className="font-semibold text-orange-600">
+            {banners.length}
+          </span>{" "}
+          kết quả
         </div>
       </div>
 
@@ -263,7 +267,7 @@ export default function BannersPage() {
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.src =
-                            "/placeholder.svg?height=128&width=192";
+                            "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg";
                         }}
                       />
                       <div className="absolute top-2 left-2">
@@ -289,7 +293,9 @@ export default function BannersPage() {
                           </h3>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                             <LinkIcon className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate max-w-[300px]">{banner.bannerUrl}</span>
+                            <span className="truncate max-w-[300px]">
+                              {banner.bannerUrl}
+                            </span>
                           </div>
                         </div>
 
@@ -299,7 +305,12 @@ export default function BannersPage() {
                               Hoạt động
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="bg-gray-200 text-gray-700">Tạm dừng</Badge>
+                            <Badge
+                              variant="secondary"
+                              className="bg-gray-200 text-gray-700"
+                            >
+                              Tạm dừng
+                            </Badge>
                           )}
 
                           <DropdownMenu>
@@ -349,7 +360,11 @@ export default function BannersPage() {
                           <Badge
                             variant="outline"
                             className="font-medium"
-                            style={{ borderColor: "#FFB38A", color: "#E65100", backgroundColor: "#FFF3E0" }}
+                            style={{
+                              borderColor: "#FFB38A",
+                              color: "#E65100",
+                              backgroundColor: "#FFF3E0",
+                            }}
                           >
                             {getBannerTypeLabel(banner.bannerType)}
                           </Badge>
@@ -369,20 +384,20 @@ export default function BannersPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div
-                className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50"
-              >
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50">
                 <Filter className="h-10 w-10 text-orange-400" />
               </div>
-              <h3
-                className="text-xl font-bold mb-2 text-gray-900"
-              >
-                {filterType === "ALL" ? "Chưa có banner nào" : "Không tìm thấy kết quả"}
+              <h3 className="text-xl font-bold mb-2 text-gray-900">
+                {filterType === "ALL"
+                  ? "Chưa có banner nào"
+                  : "Không tìm thấy kết quả"}
               </h3>
               <p className="text-muted-foreground mb-6 max-w-md">
                 {filterType === "ALL"
                   ? "Bắt đầu tạo banner quảng cáo đầu tiên để thu hút khách hàng."
-                  : `Chưa có banner nào thuộc loại "${getBannerTypeLabel(filterType)}". Hãy thử chọn loại khác hoặc tạo mới.`}
+                  : `Chưa có banner nào thuộc loại "${getBannerTypeLabel(
+                      filterType
+                    )}". Hãy thử chọn loại khác hoặc tạo mới.`}
               </p>
               <Button
                 onClick={() => {
@@ -393,7 +408,11 @@ export default function BannersPage() {
                   }
                 }}
                 variant={filterType !== "ALL" ? "outline" : "default"}
-                className={filterType === "ALL" ? "text-white bg-orange-600 hover:bg-orange-700" : ""}
+                className={
+                  filterType === "ALL"
+                    ? "text-white bg-orange-600 hover:bg-orange-700"
+                    : ""
+                }
               >
                 {filterType !== "ALL" ? "Xóa bộ lọc" : "Tạo banner mới"}
               </Button>

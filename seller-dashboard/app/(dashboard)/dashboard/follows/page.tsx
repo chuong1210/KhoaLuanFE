@@ -249,7 +249,10 @@ export default function FollowersPage() {
                           <div className="relative">
                             <Avatar className="h-16 w-16 border-2 border-[#FFB38A]/40 group-hover:border-[#FF6A00] transition-colors">
                               <AvatarImage
-                                src={follower.userAvatar || "/placeholder.svg"}
+                                src={
+                                  follower.userAvatar ||
+                                  "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg"
+                                }
                                 alt={follower.userName}
                               />
                               <AvatarFallback

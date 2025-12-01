@@ -342,7 +342,7 @@ export default function OrdersListPage() {
                             <img
                               src={
                                 order.items[0]?.product_image ||
-                                "/placeholder.svg"
+                                "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg"
                               }
                               alt={order.items[0]?.product_name}
                               className="w-10 h-10 object-cover rounded border border-[#FFB38A]"

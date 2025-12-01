@@ -122,7 +122,8 @@ export function ImageUploader({
                     alt={`Preview ${index + 1}`}
                     className="h-full w-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg";
+                      e.currentTarget.src =
+                        "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg";
                     }}
                   />
                 </div>

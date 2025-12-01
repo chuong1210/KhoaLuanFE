@@ -267,7 +267,7 @@ export default function BannersPage() {
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           e.currentTarget.src =
-                            "/placeholder.svg?height=128&width=192";
+                            "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg";
                         }}
                       />
                       <div className="absolute top-2 left-2">

@@ -1,25 +1,33 @@
-"use client"
-import { useState } from "react"
-import type React from "react"
+"use client";
+import { useState } from "react";
+import type React from "react";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { chatService } from "@/services/chat-service"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageSquare, Send } from "lucide-react"
-import { toast } from "sonner"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { chatService } from "@/services/chat-service";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageSquare, Send } from "lucide-react";
+import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function MessagesPage() {
-  const queryClient = useQueryClient()
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
-  const [messageInput, setMessageInput] = useState("")
+  const queryClient = useQueryClient();
+  const [selectedConversation, setSelectedConversation] = useState<
+    string | null
+  >(null);
+  const [messageInput, setMessageInput] = useState("");
 
   const {
     data: conversations,
@@ -28,7 +36,7 @@ export default function MessagesPage() {
   } = useQuery({
     queryKey: ["conversations"],
     queryFn: chatService.getConversations,
-  })
+  });
 
   const {
     data: messages,
@@ -38,40 +46,47 @@ export default function MessagesPage() {
     queryKey: ["messages", selectedConversation],
     queryFn: () => chatService.getMessages(selectedConversation!),
     enabled: !!selectedConversation,
-  })
+  });
 
   const sendMessageMutation = useMutation({
-    mutationFn: ({ conversationId, content }: { conversationId: string; content: string }) =>
-      chatService.sendMessage(conversationId, content),
+    mutationFn: ({
+      conversationId,
+      content,
+    }: {
+      conversationId: string;
+      content: string;
+    }) => chatService.sendMessage(conversationId, content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", selectedConversation] })
-      queryClient.invalidateQueries({ queryKey: ["conversations"] })
-      setMessageInput("")
+      queryClient.invalidateQueries({
+        queryKey: ["messages", selectedConversation],
+      });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setMessageInput("");
     },
     onError: () => {
-      toast.error("Không thể gửi tin nhắn")
+      toast.error("Không thể gửi tin nhắn");
     },
-  })
+  });
 
   const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedConversation || !messageInput.trim()) return
+    e.preventDefault();
+    if (!selectedConversation || !messageInput.trim()) return;
     sendMessageMutation.mutate({
       conversationId: selectedConversation,
       content: messageInput,
-    })
-  }
+    });
+  };
 
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString("vi-VN", {
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("vi-VN")
-  }
+    return new Date(date).toLocaleDateString("vi-VN");
+  };
 
   return (
     <div className="space-y-6">
@@ -88,7 +103,9 @@ export default function MessagesPage() {
               <MessageSquare className="h-5 w-5" />
               Cuộc trò chuyện
             </CardTitle>
-            <CardDescription>{conversations?.length || 0} cuộc trò chuyện</CardDescription>
+            <CardDescription>
+              {conversations?.length || 0} cuộc trò chuyện
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {isLoadingConversations ? (
@@ -101,7 +118,9 @@ export default function MessagesPage() {
               <Alert variant="destructive" className="m-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Lỗi</AlertTitle>
-                <AlertDescription>Không thể tải danh sách cuộc trò chuyện</AlertDescription>
+                <AlertDescription>
+                  Không thể tải danh sách cuộc trò chuyện
+                </AlertDescription>
               </Alert>
             ) : conversations && conversations.length > 0 ? (
               <ScrollArea className="h-[calc(100vh-18rem)]">
@@ -111,24 +130,41 @@ export default function MessagesPage() {
                       key={conversation.id}
                       onClick={() => setSelectedConversation(conversation.id)}
                       className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-accent ${
-                        selectedConversation === conversation.id ? "bg-accent" : ""
+                        selectedConversation === conversation.id
+                          ? "bg-accent"
+                          : ""
                       }`}
                     >
                       <Avatar>
-                        <AvatarImage src={conversation.userAvatar || "/placeholder.svg"} alt={conversation.userName} />
-                        <AvatarFallback>{conversation.userName[0]?.toUpperCase()}</AvatarFallback>
+                        <AvatarImage
+                          src={
+                            conversation.userAvatar ||
+                            "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg"
+                          }
+                          alt={conversation.userName}
+                        />
+                        <AvatarFallback>
+                          {conversation.userName[0]?.toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 overflow-hidden">
                         <div className="flex items-center justify-between">
                           <p className="font-medium">{conversation.userName}</p>
                           {conversation.unreadCount > 0 && (
-                            <Badge variant="destructive" className="h-5 w-5 rounded-full p-0 text-xs">
+                            <Badge
+                              variant="destructive"
+                              className="h-5 w-5 rounded-full p-0 text-xs"
+                            >
                               {conversation.unreadCount}
                             </Badge>
                           )}
                         </div>
-                        <p className="truncate text-sm text-muted-foreground">{conversation.lastMessage}</p>
-                        <p className="text-xs text-muted-foreground">{formatTime(conversation.lastMessageTime)}</p>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {conversation.lastMessage}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatTime(conversation.lastMessageTime)}
+                        </p>
                       </div>
                     </button>
                   ))}
@@ -137,7 +173,9 @@ export default function MessagesPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MessageSquare className="mb-4 h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground">Chưa có cuộc trò chuyện nào</p>
+                <p className="text-muted-foreground">
+                  Chưa có cuộc trò chuyện nào
+                </p>
               </div>
             )}
           </CardContent>
@@ -148,7 +186,8 @@ export default function MessagesPage() {
           <CardHeader>
             <CardTitle>
               {selectedConversation
-                ? conversations?.find((c) => c.id === selectedConversation)?.userName
+                ? conversations?.find((c) => c.id === selectedConversation)
+                    ?.userName
                 : "Chọn cuộc trò chuyện"}
             </CardTitle>
           </CardHeader>
@@ -176,7 +215,11 @@ export default function MessagesPage() {
                     {messages?.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.senderType === "shop" ? "justify-end" : "justify-start"}`}
+                        className={`flex ${
+                          message.senderType === "shop"
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
                       >
                         <div
                           className={`max-w-[70%] rounded-lg p-3 ${
@@ -186,7 +229,9 @@ export default function MessagesPage() {
                           }`}
                         >
                           <p>{message.content}</p>
-                          <p className="mt-1 text-xs opacity-70">{formatTime(message.createdAt)}</p>
+                          <p className="mt-1 text-xs opacity-70">
+                            {formatTime(message.createdAt)}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -200,7 +245,12 @@ export default function MessagesPage() {
                     placeholder="Nhập tin nhắn..."
                     disabled={sendMessageMutation.isPending}
                   />
-                  <Button type="submit" disabled={sendMessageMutation.isPending || !messageInput.trim()}>
+                  <Button
+                    type="submit"
+                    disabled={
+                      sendMessageMutation.isPending || !messageInput.trim()
+                    }
+                  >
                     <Send className="h-4 w-4" />
                   </Button>
                 </form>
@@ -210,5 +260,5 @@ export default function MessagesPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
