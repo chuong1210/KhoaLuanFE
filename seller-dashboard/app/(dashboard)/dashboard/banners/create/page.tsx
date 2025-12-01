@@ -233,8 +233,8 @@ export default function CreateBannerPage() {
                   <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-4">
                     <p className="text-white text-sm font-medium">
                       {formData.bannerImage &&
-                        typeof formData.bannerImage === "object" &&
-                        "name" in formData.bannerImage
+                      typeof formData.bannerImage === "object" &&
+                      "name" in formData.bannerImage
                         ? (formData.bannerImage as File).name
                         : "Ảnh banner"}
                     </p>
@@ -280,7 +280,8 @@ export default function CreateBannerPage() {
                 value={formData.bannerUrl}
                 onChange={handleTextChange}
                 placeholder="https://example.com/promotion"
-                type="url"
+                // type="url"
+                type="text"
                 required
                 className="h-11 border-2 focus:border-[#FF6A00]"
               />

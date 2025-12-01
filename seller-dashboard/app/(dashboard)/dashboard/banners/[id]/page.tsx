@@ -335,7 +335,7 @@ export default function EditBannerPage() {
                 value={formData.bannerUrl}
                 onChange={handleTextChange}
                 placeholder="https://example.com/promotion"
-                type="url"
+                type="text"
                 required
                 className="h-11 border-2 focus:border-[#FF6A00]"
               />
