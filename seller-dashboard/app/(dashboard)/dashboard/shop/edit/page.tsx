@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AddressSelector } from "../components/address-selector";
 import { shopService } from "@/services/shop-service";
 import {
   Card,
@@ -22,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch"; // Cần cài shadcn switch
+import { Switch } from "@/components/ui/real-switch"; // Cần cài shadcn switch
 import { toast } from "sonner";
 import {
   Loader2,
@@ -185,6 +186,9 @@ export default function EditShopPage() {
     e.preventDefault();
     updateMutation.mutate(formData);
   };
+  const handleAddressChange = useCallback((fullAddress: string) => {
+    setFormData((prev) => ({ ...prev, shopAddress: fullAddress }));
+  }, []);
 
   // Helper render lỗi
   const renderError = (field: string) => {
@@ -267,7 +271,7 @@ export default function EditShopPage() {
                 Trạng thái:
               </span>
               <Switch
-                checked={formData.shopStatus}
+                checked={!!formData.shopStatus}
                 onCheckedChange={(c) =>
                   setFormData({ ...formData, shopStatus: c })
                 }
@@ -380,21 +384,43 @@ export default function EditShopPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label htmlFor="shopAddress">
                     Địa chỉ <span className="text-red-500">*</span>
                   </Label>
-                  <Textarea
-                    id="shopAddress"
-                    name="shopAddress"
-                    value={formData.shopAddress}
-                    onChange={handleTextChange}
-                    rows={2}
-                    className={cn(
-                      "resize-none focus:ring-[#FF6A00]",
-                      hasError("ShopAddress") && "border-red-500"
-                    )}
-                  />
+
+                  {/* Hiển thị địa chỉ hiện tại dưới dạng Textarea (ReadOnly hoặc để copy) */}
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">
+                      Địa chỉ hiện tại (kết quả):
+                    </span>
+                    <Textarea
+                      id="shopAddress"
+                      name="shopAddress"
+                      value={formData.shopAddress}
+                      readOnly // Khóa không cho sửa tay trực tiếp để đảm bảo tính nhất quán từ dropdown
+                      className={cn(
+                        "resize-none bg-gray-100 text-gray-700 cursor-not-allowed",
+                        hasError("ShopAddress") && "border-red-500"
+                      )}
+                    />
+                  </div>
+
+                  {/* Component chọn để CẬP NHẬT địa chỉ */}
+                  <div className="rounded-md border p-4 bg-white shadow-sm">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-medium text-orange-700">
+                      <MapPin className="h-4 w-4" />
+                      Chọn địa chỉ mới (Nếu muốn thay đổi)
+                    </div>
+
+                    <AddressSelector
+                      onChange={handleAddressChange} // Truyền hàm đã được memorize
+                      hasError={hasError("ShopAddress")}
+                      // Không truyền initialValue để parse dropdown vì rất khó khớp chuỗi text cũ vào dropdown
+                      // Người dùng sẽ chọn lại từ đầu nếu muốn đổi địa chỉ
+                    />
+                  </div>
+
                   {renderError("ShopAddress")}
                 </div>
 

@@ -18,6 +18,11 @@ import {
   Eye,
   MousePointerClick,
   FileText,
+  Activity,
+  Award,
+  Bot,
+  MessageCircleQuestion,
+  Headset,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,9 +50,9 @@ import {
   useRevenueTimeseries,
   usePlatformShops,
   useVoucherPerformance,
-  useAIDashboard, // Hook mới
+  useAIDashboard,
 } from "@/features/analytics/hooks/useAnalytics";
-import { analyticsService } from "@/features/analytics/services/analyticsApi"; // Service mới
+import { analyticsService } from "@/features/analytics/services/analyticsApi";
 import { formatCurrency, formatNumber, cn } from "@/lib/utils";
 import {
   exportAnalyticsOverview,
@@ -57,6 +62,11 @@ import {
   exportAnalyticsComprehensive,
 } from "@/lib/excel-export";
 import { toast } from "sonner";
+import { AIHealthStatus } from "@/components/ai-analytics/AIHealthStatus";
+import { AIAlgorithmComparison } from "@/components/ai-analytics/AIAlgorithmComparison";
+import { SupportFeedbackTab } from "@/components/ai-analytics/SupportFeedbackTab";
+import { ChatboxAnalyticsTab } from "@/components/ai-analytics/ChatboxAnalyticsTab";
+import { AgentAnalyticsTab } from "@/components/ai-analytics/AgentAnalyticsTab";
 
 interface MetricCardProps {
   title: string;
@@ -82,7 +92,7 @@ function MetricCard({
     green: "from-green-500 to-green-400",
     blue: "from-blue-500 to-blue-400",
     purple: "from-purple-500 to-purple-400",
-    indigo: "from-indigo-500 to-indigo-400", // Thêm màu cho AI
+    indigo: "from-indigo-500 to-indigo-400",
   };
 
   if (isLoading) {
@@ -149,7 +159,7 @@ export default function AnalyticsPage() {
 
   const dateParams = { start_date: startDate, end_date: endDate };
 
-  // 1. Existing Hooks
+  // Existing Hooks
   const { data: overview, isLoading: overviewLoading } =
     usePlatformOverview(dateParams);
   const { data: revenueData, isLoading: revenueLoading } =
@@ -160,22 +170,19 @@ export default function AnalyticsPage() {
   const { data: voucherPerf, isLoading: voucherLoading } =
     useVoucherPerformance(dateParams);
 
-  // 2. New AI Hook
+  // AI Dashboard Hook
   const { data: aiData, isLoading: aiLoading } = useAIDashboard(dateRange);
   const aiSummary = aiData?.summary;
 
-  // --- Map dữ liệu AI sang format cho RevenueChart ---
   const aiChartData =
     aiData?.trend_chart.map((item) => ({
       date: item.date,
-      // Tận dụng props của RevenueChart (total_gmv => Doanh thu AI, platform_revenue => Đơn hàng * const)
-      // Ở đây map Doanh thu AI vào đường màu cam (GMV)
       total_gmv: item.revenue,
-      platform_revenue: 0, // Có thể map lượt click nếu muốn vẽ thêm đường
+      platform_revenue: 0,
       platform_profit: 0,
     })) || [];
 
-  // --- Export Handlers ---
+  // Export Handlers
   const handleExportOverview = () => {
     if (!overview) {
       toast.error("Không có dữ liệu để xuất");
@@ -227,7 +234,6 @@ export default function AnalyticsPage() {
     toast.success("Xuất báo cáo tổng hợp thành công!");
   };
 
-  // Handler xuất báo cáo AI (CSV/PDF)
   const handleExportAI = async (format: "csv" | "pdf") => {
     try {
       const daysNum = parseInt(dateRange.replace("days", "")) || 30;
@@ -248,7 +254,7 @@ export default function AnalyticsPage() {
             Phân tích & Thống kê
           </h1>
           <p className="text-gray-500 mt-1">
-            Theo dõi hiệu suất kinh doanh của sàn thương mại điện tử
+            Theo dõi hiệu suất kinh doanh và AI của sàn thương mại điện tử
           </p>
         </div>
         <div className="flex gap-2">
@@ -301,7 +307,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Overview Metrics (Platform) */}
+      {/* Overview Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Tổng GMV"
@@ -346,7 +352,7 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {/* Tabs for different analytics views */}
+      {/* Tabs */}
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -357,10 +363,26 @@ export default function AnalyticsPage() {
             <TabsTrigger value="revenue">Doanh thu</TabsTrigger>
             <TabsTrigger value="shops">Cửa hàng</TabsTrigger>
             <TabsTrigger value="vouchers">Voucher</TabsTrigger>
-            {/* NEW AI TAB */}
             <TabsTrigger value="ai" className="gap-2">
               <Zap className="h-4 w-4" />
-              AI Gợi ý
+              AI Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="ai-performance" className="gap-2">
+              <Award className="h-4 w-4" />
+              A/B Testing
+            </TabsTrigger>
+            <TabsTrigger value="ai-health" className="gap-2">
+              <Activity className="h-4 w-4" />
+              System Health
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="gap-2">
+              <Bot className="h-4 w-4" /> Agent AI
+            </TabsTrigger>
+            <TabsTrigger value="chatbox" className="gap-2">
+              <MessageCircleQuestion className="h-4 w-4" /> Chatbox
+            </TabsTrigger>
+            <TabsTrigger value="support" className="gap-2">
+              <Headset className="h-4 w-4" /> Support
             </TabsTrigger>
           </TabsList>
 
@@ -384,7 +406,6 @@ export default function AnalyticsPage() {
             </Button>
           )}
 
-          {/* NEW Export for AI Tab */}
           {activeTab === "ai" && aiData && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -716,11 +737,8 @@ export default function AnalyticsPage() {
           </Card>
         </TabsContent>
 
-        {/* ======================================================== */}
-        {/* NEW: AI RECOMMENDATION TAB CONTENT                       */}
-        {/* ======================================================== */}
+        {/* AI Dashboard Tab */}
         <TabsContent value="ai" className="space-y-4">
-          {/* AI Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               title="Lượt hiển thị"
@@ -759,7 +777,6 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* AI Trend Chart (Reusing RevenueChart Component) */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -768,14 +785,10 @@ export default function AnalyticsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RevenueChart
-                  data={aiChartData as any} // Ép kiểu tạm thời để tái sử dụng component
-                  isLoading={aiLoading}
-                />
+                <RevenueChart data={aiChartData as any} isLoading={aiLoading} />
               </CardContent>
             </Card>
 
-            {/* Algorithm Performance List */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -822,6 +835,88 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* AI Performance Tab */}
+        <TabsContent value="ai-performance" className="space-y-4">
+          <AIAlgorithmComparison />
+        </TabsContent>
+
+        {/* AI Health Tab */}
+        <TabsContent value="ai-health" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <AIHealthStatus />
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-orange-vivid" />
+                  Hướng dẫn Giám sát Hệ thống
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                  <h3 className="font-semibold text-sm text-blue-900 mb-2">
+                    Trạng thái Healthy
+                  </h3>
+                  <p className="text-sm text-blue-700">
+                    Tất cả các component (Database, Redis, Server) đang hoạt
+                    động bình thường. Hệ thống AI đang sẵn sàng xử lý các yêu
+                    cầu gợi ý sản phẩm.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+                  <h3 className="font-semibold text-sm text-yellow-900 mb-2">
+                    Trạng thái Degraded
+                  </h3>
+                  <p className="text-sm text-yellow-700">
+                    Một hoặc nhiều component đang gặp vấn đề nhưng hệ thống vẫn
+                    có thể hoạt động với hiệu suất giảm. Cần kiểm tra và khắc
+                    phục sớm.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                  <h3 className="font-semibold text-sm text-red-900 mb-2">
+                    Trạng thái Unhealthy
+                  </h3>
+                  <p className="text-sm text-red-700">
+                    Hệ thống đang gặp lỗi nghiêm trọng. Các gợi ý sản phẩm có
+                    thể không khả dụng. Cần can thiệp kỹ thuật ngay lập tức.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-gray-50 border">
+                  <h3 className="font-semibold text-sm text-gray-900 mb-2">
+                    Giám sát Tự động
+                  </h3>
+                  <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                    <li>Health check được thực hiện mỗi 30 giây</li>
+                    <li>Dữ liệu được cập nhật tự động</li>
+                    <li>
+                      Cảnh báo email khi phát hiện vấn đề (nếu được cấu hình)
+                    </li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab Agent AI */}
+        <TabsContent value="agent" className="space-y-4">
+          <AgentAnalyticsTab dateParams={dateParams} />
+        </TabsContent>
+
+        {/* Tab Chatbox */}
+        <TabsContent value="chatbox" className="space-y-4">
+          <ChatboxAnalyticsTab dateParams={dateParams} />
+        </TabsContent>
+
+        {/* Tab Support */}
+        <TabsContent value="support" className="space-y-4">
+          <SupportFeedbackTab dateParams={dateParams} />
         </TabsContent>
       </Tabs>
     </div>

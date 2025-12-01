@@ -33,6 +33,7 @@ import {
   CreditCard,
   Clock,
   Image as ImageIcon,
+  BarChart3,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -144,13 +145,7 @@ export default function ShopManagementPage() {
           )}
           <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
 
-          {/* Edit Button (Absolute Top Right) */}
-          <Button
-            onClick={() => router.push("/dashboard/shop/edit")}
-            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/50 text-white shadow-lg"
-          >
-            <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa giao diện
-          </Button>
+          {/* Action Buttons (Absolute Top Right) */}
         </div>
 
         {/* Shop Profile Header */}
@@ -205,8 +200,15 @@ export default function ShopManagementPage() {
               </p>
             </div>
 
-            {/* Action Button */}
-            <div className="pb-4 hidden md:block">
+            {/* Action Button for Desktop */}
+            <div className="pb-4 hidden md:flex gap-3">
+              <Button
+                onClick={() => router.push("/dashboard/shop/analytics")}
+                className="h-11 px-6 shadow-lg hover:shadow-xl transition-all font-semibold text-white bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              >
+                <BarChart3 className="mr-2 h-4 w-4" /> Xem thống kê
+              </Button>
+
               <Button
                 onClick={() => router.push("/dashboard/shop/edit")}
                 className="h-11 px-6 shadow-lg hover:shadow-xl transition-all font-semibold text-white"

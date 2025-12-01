@@ -4,6 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { AddressSelector } from "../components/address-selector";
 import { shopService } from "@/services/shop-service"; // Đảm bảo đường dẫn đúng
 import {
   Card,
@@ -605,20 +606,30 @@ export default function ShopRegistrationPage() {
                   <MapPin className="h-4 w-4" />
                   Địa chỉ cửa hàng *
                 </Label>
-                <Textarea
-                  id="shopAddress"
-                  name="shopAddress"
-                  value={formData.shopAddress}
-                  onChange={handleTextChange}
-                  placeholder="Nhập địa chỉ đầy đủ của cửa hàng"
-                  required
-                  rows={3}
+                {/* Component chọn địa chỉ mới */}
+                <div
                   className={cn(
-                    "border-2 focus:border-[#FF6A00] resize-none",
-                    hasError("ShopAddress") &&
-                      "border-red-500 focus:border-red-500 bg-red-50"
+                    "p-4 bg-gray-50 rounded-lg border",
+                    hasError("ShopAddress") && "border-red-500 bg-red-50"
                   )}
-                />
+                >
+                  <AddressSelector
+                    onChange={(fullAddress) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        shopAddress: fullAddress,
+                      }))
+                    }
+                    hasError={hasError("ShopAddress")}
+                  />
+                </div>
+                {/* Input ẩn để debug hoặc fallback nếu cần, có thể xóa đi */}
+                {/* Hiển thị địa chỉ xem trước */}
+                {formData.shopAddress && (
+                  <p className="text-sm text-gray-600 italic mt-2">
+                    Địa chỉ sẽ lưu: {formData.shopAddress}
+                  </p>
+                )}{" "}
                 {renderError("ShopAddress")}
               </div>
 

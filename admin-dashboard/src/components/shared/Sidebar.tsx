@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Users,
   Store,
   Ticket,
   BarChart3,
@@ -15,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderTree,
-  Image, // <-- thêm icon này
+  Image,
+  FileText, // Icon cho Chính sách
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useSidebarCollapsed } from "@/store";
@@ -40,8 +40,13 @@ const menuItems = [
     href: "/dashboard/categories",
   },
   {
-    title: "Duyệt sản phẩm",
-    icon: Package, // hoặc CheckCircle
+    title: "Chính sách",
+    icon: FileText, // Đã thêm icon FileText vào đây
+    href: "/dashboard/policies",
+  },
+  {
+    title: "Sản phẩm",
+    icon: Package,
     href: "/dashboard/products",
   },
   {
@@ -79,25 +84,29 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-orange-apricot to-white border-r border-orange-peach/30 transition-all duration-300",
+        "fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-orange-50 to-white border-r border-orange-200 transition-all duration-300",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-orange-peach/30">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-orange-100/50">
         {!isCollapsed && (
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-sunrise flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FF6A00] to-[#FFB000] flex items-center justify-center shadow-md">
               <span className="text-white font-bold text-xl">L</span>
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-gray-800">Le Marchenoble</span>
-              <span className="text-xs text-gray-500">Admin Panel</span>
+              <span className="font-bold text-gray-800 text-lg tracking-tight">
+                Le Marché
+              </span>
+              <span className="text-[10px] uppercase font-semibold text-[#FF6A00] tracking-wider">
+                Admin Panel
+              </span>
             </div>
           </Link>
         )}
         {isCollapsed && (
-          <div className="w-10 h-10 mx-auto rounded-lg bg-gradient-sunrise flex items-center justify-center">
+          <div className="w-10 h-10 mx-auto rounded-lg bg-gradient-to-br from-[#FF6A00] to-[#FFB000] flex items-center justify-center shadow-md">
             <span className="text-white font-bold text-xl">L</span>
           </div>
         )}
@@ -108,7 +117,7 @@ export function Sidebar() {
         variant="ghost"
         size="icon"
         onClick={() => dispatch(toggleSidebarCollapse())}
-        className="absolute -right-3 top-20 z-50 h-6 w-6 rounded-full border border-orange-peach/30 bg-white shadow-sm hover:bg-orange-apricot"
+        className="absolute -right-3 top-20 z-50 h-6 w-6 rounded-full border border-orange-200 bg-white shadow-sm hover:bg-orange-50 text-orange-600"
       >
         {isCollapsed ? (
           <ChevronRight className="h-4 w-4" />
@@ -129,18 +138,20 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                title={isCollapsed ? item.title : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden",
                   isActive
-                    ? "bg-gradient-sunrise text-white shadow-orange-md"
-                    : "text-gray-600 hover:bg-orange-apricot/70 hover:text-primary",
+                    ? "bg-gradient-to-r from-[#FF6A00] to-[#FFB000] text-white shadow-md shadow-orange-500/20"
+                    : "text-gray-600 hover:bg-orange-50 hover:text-[#E65100]",
                   isCollapsed && "justify-center px-2"
                 )}
               >
                 <Icon
                   className={cn(
-                    "h-5 w-5 flex-shrink-0",
-                    isCollapsed && "h-6 w-6"
+                    "h-5 w-5 flex-shrink-0 transition-transform duration-200",
+                    isCollapsed ? "h-6 w-6" : "mr-1",
+                    !isActive && "group-hover:scale-110"
                   )}
                 />
                 {!isCollapsed && (
@@ -152,15 +163,21 @@ export function Sidebar() {
         </nav>
 
         {/* Settings */}
-        <div className="px-3 pt-4 border-t border-orange-peach/30 mt-4">
+        <div className="px-3 pt-4 border-t border-orange-100 mt-4">
           <Link
             href="/dashboard/settings"
+            title={isCollapsed ? "Cài đặt" : undefined}
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-orange-apricot/70 hover:text-primary transition-all duration-200",
+              "flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-orange-50 hover:text-[#E65100] transition-all duration-200 group",
               isCollapsed && "justify-center px-2"
             )}
           >
-            <Settings className={cn("h-5 w-5", isCollapsed && "h-6 w-6")} />
+            <Settings
+              className={cn(
+                "h-5 w-5 group-hover:rotate-90 transition-transform duration-500",
+                isCollapsed && "h-6 w-6"
+              )}
+            />
             {!isCollapsed && <span className="font-medium">Cài đặt</span>}
           </Link>
         </div>

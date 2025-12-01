@@ -172,7 +172,7 @@ export default function ProductDetailPage({
           <div className="absolute inset-0 bg-linear-to-br from-black/10 to-transparent"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-48 translate-x-48"></div>
 
-          <div className="relative flex items-center justify-between">
+          <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div className="flex items-center gap-5">
               <Button
                 variant="ghost"
@@ -198,7 +198,17 @@ export default function ProductDetailPage({
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              {/* NEW: Analytics Button */}
+              <Button
+                size="lg"
+                onClick={() => router.push(`/product/analytics/${id}`)}
+                className="bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 backdrop-blur-sm font-semibold px-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+              >
+                <BarChart3 className="mr-2 h-5 w-5" />
+                Xem thống kê
+              </Button>
+
               <Button
                 size="lg"
                 onClick={() => router.push(`/dashboard/products/${id}/edit`)}
