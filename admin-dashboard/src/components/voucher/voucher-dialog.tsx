@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -455,28 +455,52 @@ export function VoucherEditDialog({
 
   const form = useForm<VoucherFormData>({
     resolver: zodResolver(updateVoucherSchema),
-    defaultValues: voucher
-      ? {
-          name: voucher.name,
-          discount_type: voucher.discount_type,
-          discount_value: parseFloat(voucher.discount_value),
-          is_shop_voucher: !!voucher.shop_id,
-          shop_id: voucher.shop_id?.toString() || null,
-          max_discount_amount: voucher.max_discount_amount?.Valid
-            ? parseFloat(voucher.max_discount_amount.String)
-            : undefined,
-          applies_to_type: voucher.applies_to_type,
-          min_purchase_amount: parseFloat(voucher.min_purchase_amount),
-          audience_type: voucher.audience_type,
-          start_date: formatISOToDateTimeLocal(voucher.start_date),
-          end_date: formatISOToDateTimeLocal(voucher.end_date),
-          total_quantity: voucher.total_quantity,
-          max_usage_per_user: voucher.max_usage_per_user,
-          is_active: voucher.is_active,
-          user_use: voucher.user_use || [],
-        }
-      : undefined,
+    // ⭐ Đặt defaultValues đơn giản
+    defaultValues: {
+      name: "",
+      discount_type: "PERCENTAGE",
+      discount_value: 0,
+      is_shop_voucher: false,
+      shop_id: null,
+      max_discount_amount: undefined,
+      applies_to_type: "ORDER_TOTAL",
+      min_purchase_amount: 0,
+      audience_type: "PUBLIC",
+      start_date: "",
+      end_date: "",
+      total_quantity: 100,
+      max_usage_per_user: 1,
+      is_active: true,
+      user_use: [],
+    },
   });
+
+  // ⭐ KEY FIX: Reset form when voucher changes or dialog opens
+  useEffect(() => {
+    if (voucher && isOpen) {
+      console.log("Loading voucher into form:", voucher); // Debug
+
+      form.reset({
+        name: voucher.name,
+        discount_type: voucher.discount_type,
+        discount_value: parseFloat(voucher.discount_value),
+        is_shop_voucher: !!voucher.shop_id,
+        shop_id: voucher.shop_id?.toString() || null,
+        max_discount_amount: voucher.max_discount_amount?.Valid
+          ? parseFloat(voucher.max_discount_amount.String)
+          : undefined,
+        applies_to_type: voucher.applies_to_type,
+        min_purchase_amount: parseFloat(voucher.min_purchase_amount),
+        audience_type: voucher.audience_type,
+        start_date: formatISOToDateTimeLocal(voucher.start_date),
+        end_date: formatISOToDateTimeLocal(voucher.end_date),
+        total_quantity: voucher.total_quantity,
+        max_usage_per_user: voucher.max_usage_per_user,
+        is_active: voucher.is_active,
+        user_use: voucher.user_use || [],
+      });
+    }
+  }, [voucher, isOpen, form]);
 
   const discountType = form.watch("discount_type");
   const isShopVoucher = form.watch("is_shop_voucher");

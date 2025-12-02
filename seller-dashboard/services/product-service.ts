@@ -74,8 +74,8 @@ export const productService = {
     if (fileName.startsWith("http") || fileName.startsWith("https") ) return fileName; // Nếu đã là link full thì giữ nguyên
     return `${MEDIA_API_BASE}/${fileName}`;
   },
-  // Get all products with filters
-  getProducts: async (filters: ProductFilters = {}): Promise<ProductListResponse> => {
+// Get all products with filters (UPDATED WITH STATUS)
+  getProducts: async (filters: ProductFilters & { status?: string } = {}): Promise<ProductListResponse> => {
     const params = new URLSearchParams()
 
     if (filters.page) params.append('page', filters.page.toString())
@@ -87,12 +87,16 @@ export const productService = {
     if (filters.keywords) params.append('keywords', filters.keywords)
     if (filters.sort) params.append('sort', filters.sort)
     if (filters.cate_path) params.append('cate_path', filters.cate_path)
+    
+    // NEW: Add status filter
+    if (filters.status) params.append('status', filters.status)
 
     const response = await apiClient.get(
       `${PRODUCT_API_BASE}/getall${params.toString() ? '?' + params.toString() : ''}`
     )
     return response.data.result
   },
+
 
   // Get product detail by ID
   getProductDetail: async (productId: string): Promise<ProductDetail> => {

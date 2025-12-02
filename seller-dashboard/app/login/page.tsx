@@ -186,7 +186,10 @@ export default function LoginPage() {
 
           <div className="mt-8 text-center text-sm text-gray-500">
             Chưa có cửa hàng?{" "}
-            <span className="text-orange-600 font-semibold cursor-pointer hover:underline">
+            <span
+              onClick={() => router.push("/register")}
+              className="text-orange-600 font-semibold cursor-pointer hover:underline"
+            >
               Đăng ký ngay
             </span>
           </div>

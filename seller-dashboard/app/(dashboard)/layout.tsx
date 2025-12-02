@@ -134,11 +134,7 @@ export default function DashboardLayout({
       icon: Ticket,
       href: "/dashboard/vouchers",
     },
-    {
-      title: "Ví tiền",
-      icon: Wallet,
-      href: "/dashboard/wallet",
-    },
+
     {
       title: "Chính sách",
       icon: FileText,
@@ -149,11 +145,7 @@ export default function DashboardLayout({
       icon: ImageIcon,
       href: "/dashboard/banners",
     },
-    {
-      title: "Vận chuyển",
-      icon: Truck,
-      href: "/dashboard/transfers",
-    },
+
     {
       title: "Theo dõi",
       icon: Users,
@@ -166,9 +158,7 @@ export default function DashboardLayout({
     },
   ];
 
-  const menuItems = hasApprovedShop
-    ? allMenuItems
-    : [allMenuItems[0], allMenuItems[1]];
+  const menuItems = hasApprovedShop ? allMenuItems : [allMenuItems[0]];
 
   return (
     <div className="flex min-h-screen overflow-hidden bg-[#FAFAF9]">

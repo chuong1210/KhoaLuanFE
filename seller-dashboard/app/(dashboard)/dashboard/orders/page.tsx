@@ -98,7 +98,7 @@ export default function OrdersListPage() {
 
     return (
       <Badge
-        className="text-white font-medium"
+        className="text-white font-medium px-3 py-1 rounded-full"
         style={{ backgroundColor: config.color }}
       >
         <Icon className="mr-1 h-3 w-3" />
@@ -116,111 +116,67 @@ export default function OrdersListPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const getStatusCount = (status: OrderStatus) => {
-    return (
-      data?.result.data.filter((order) => order.status === status).length || 0
-    );
-  };
-
   if (!shopId) {
     return (
-      <Alert className="border-[#FFB38A] bg-[#FFF0E0]">
-        <AlertDescription style={{ color: "#E65100" }}>
-          Vui lòng đăng nhập và có shop để xem danh sách đơn hàng.
-        </AlertDescription>
-      </Alert>
+      <div className="p-6">
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertDescription className="text-orange-800">
+            ⚠️ Vui lòng đăng nhập và có shop để xem danh sách đơn hàng.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-linear-to-br from-orange-50/30 via-white to-amber-50/30 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2
-            className="text-3xl font-bold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #FF6A00 0%, #FFB000 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Quản lý Đơn hàng
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+            📦 Quản lý Đơn hàng
           </h2>
-          <p className="text-gray-600 mt-1">
-            Tổng cộng:{" "}
-            <span className="font-semibold" style={{ color: "#FF6A00" }}>
+          <p className="text-gray-500 text-sm">
+            Bạn có{" "}
+            <span className="font-semibold text-orange-600">
               {data?.result.totalElements || 0}
             </span>{" "}
             đơn hàng
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             onClick={() => refetch()}
             variant="outline"
-            className="border-[#FFB38A] hover:bg-[#FFF0E0]"
-            style={{ color: "#FF6A00" }}
+            className="border-orange-200 hover:bg-orange-50 text-orange-600 transition-all duration-200 hover:shadow-md"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Làm mới
           </Button>
           <Button
             onClick={() => setShowFilters(!showFilters)}
-            className="text-white"
-            style={{
-              background: "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
-            }}
+            className="bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md hover:shadow-lg transition-all duration-200"
           >
             <Filter className="mr-2 h-4 w-4" />
-            {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+            {showFilters ? "Ẩn bộ lọc" : "Bộ lọc"}
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-          const Icon = config.icon;
-          const count = getStatusCount(status as OrderStatus);
-
-          return (
-            <Card
-              key={status}
-              className="border-0 shadow-md hover:shadow-lg transition-shadow"
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs font-medium text-gray-600">
-                  {config.label}
-                </CardTitle>
-                <Icon className="h-4 w-4" style={{ color: config.color }} />
-              </CardHeader>
-              <CardContent>
-                <div
-                  className="text-2xl font-bold"
-                  style={{ color: config.color }}
-                >
-                  {count}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
       {/* Filters */}
       {showFilters && (
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg" style={{ color: "#E65100" }}>
+        <Card className="border-orange-100 shadow-sm bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg text-orange-700 flex items-center gap-2">
+              <Filter className="h-5 w-5" />
               Bộ lọc tìm kiếm
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
               <div className="flex-1 min-w-[200px]">
-                <Label className="mb-2 block text-sm font-medium">
-                  Trạng thái
+                <Label className="mb-2 block text-sm font-medium text-gray-700">
+                  Trạng thái đơn hàng
                 </Label>
                 <Select
                   value={filters.status || "ALL"}
@@ -231,7 +187,7 @@ export default function OrdersListPage() {
                     )
                   }
                 >
-                  <SelectTrigger className="h-10 border-[#FFB38A] focus:ring-[#FF6A00]">
+                  <SelectTrigger className="h-10 border-orange-200 focus:ring-orange-400 focus:border-orange-400 bg-white">
                     <SelectValue placeholder="Tất cả trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
@@ -245,7 +201,7 @@ export default function OrdersListPage() {
                 </Select>
               </div>
 
-              <div className="sm:self-end">
+              <div>
                 <Button
                   onClick={() =>
                     setFilters({
@@ -255,8 +211,7 @@ export default function OrdersListPage() {
                     })
                   }
                   variant="outline"
-                  className="h-10 w-full sm:w-auto border-[#E65100] hover:bg-[#FFF0E0]"
-                  style={{ color: "#E65100" }}
+                  className="h-10 w-full sm:w-auto border-orange-300 text-orange-600 hover:bg-orange-50"
                 >
                   Xóa bộ lọc
                 </Button>
@@ -267,51 +222,53 @@ export default function OrdersListPage() {
       )}
 
       {/* Orders Table */}
-      <Card className="border-0 shadow-md">
-        <CardHeader>
-          <CardTitle style={{ color: "#E65100" }}>Danh sách đơn hàng</CardTitle>
+      <Card className="border-orange-100 shadow-sm bg-white/80 backdrop-blur-sm">
+        <CardHeader className="border-b border-orange-100">
+          <CardTitle className="text-orange-700 flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Danh sách đơn hàng
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-2 p-6">
               {[1, 2, 3, 4, 5].map((i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
           ) : error ? (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertDescription className="text-red-800">
-                Không thể tải danh sách đơn hàng
-              </AlertDescription>
-            </Alert>
+            <div className="p-6">
+              <Alert className="border-red-200 bg-red-50">
+                <AlertDescription className="text-red-800">
+                  ❌ Không thể tải danh sách đơn hàng
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : data?.result.data && data.result.data.length > 0 ? (
             <>
-              <div className="rounded-lg border border-[#FFB38A] overflow-hidden">
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#FFF0E0] hover:bg-[#FFF0E0]">
-                      <TableHead style={{ color: "#E65100" }}>
+                    <TableRow className="bg-linear-to-r from-orange-50 to-amber-50 hover:from-orange-50 hover:to-amber-50">
+                      <TableHead className="text-orange-700 font-semibold">
                         Mã đơn hàng
                       </TableHead>
-                      <TableHead style={{ color: "#E65100" }}>
+                      <TableHead className="text-orange-700 font-semibold">
                         Sản phẩm
                       </TableHead>
-                      <TableHead style={{ color: "#E65100" }}>
+                      <TableHead className="text-orange-700 font-semibold">
                         Phí ship
                       </TableHead>
-                      <TableHead style={{ color: "#E65100" }}>
+                      <TableHead className="text-orange-700 font-semibold">
                         Tổng tiền
                       </TableHead>
-                      <TableHead style={{ color: "#E65100" }}>
+                      <TableHead className="text-orange-700 font-semibold">
                         Trạng thái
                       </TableHead>
-                      <TableHead style={{ color: "#E65100" }}>
+                      <TableHead className="text-orange-700 font-semibold">
                         Ngày tạo
                       </TableHead>
-                      <TableHead
-                        className="text-right"
-                        style={{ color: "#E65100" }}
-                      >
+                      <TableHead className="text-right text-orange-700 font-semibold">
                         Thao tác
                       </TableHead>
                     </TableRow>
@@ -320,39 +277,36 @@ export default function OrdersListPage() {
                     {data.result.data.map((order) => (
                       <TableRow
                         key={order.shop_order_id}
-                        className="hover:bg-[#FFF0E0]/30"
+                        className="hover:bg-orange-50/50 transition-colors border-b border-orange-50"
                       >
                         <TableCell className="font-medium">
                           <div>
-                            <p
-                              className="font-semibold"
-                              style={{ color: "#E65100" }}
-                            >
+                            <p className="font-semibold text-orange-700">
                               #{order.shop_order_code}
                             </p>
                             {order.tracking_code && (
-                              <p className="text-xs text-gray-500">
-                                Tracking: {order.tracking_code}
+                              <p className="text-xs text-gray-500 mt-1">
+                                📍 {order.tracking_code}
                               </p>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <img
                               src={
                                 order.items[0]?.product_image ||
                                 "https://static.vecteezy.com/system/resources/previews/016/916/479/non_2x/placeholder-icon-design-free-vector.jpg"
                               }
                               alt={order.items[0]?.product_name}
-                              className="w-10 h-10 object-cover rounded border border-[#FFB38A]"
+                              className="w-12 h-12 object-cover rounded-lg border-2 border-orange-100 shadow-sm"
                             />
                             <div className="max-w-[200px]">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-sm font-medium truncate text-gray-800">
                                 {order.items[0]?.product_name}
                               </p>
                               {order.items.length > 1 && (
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-orange-600 mt-1">
                                   +{order.items.length - 1} sản phẩm khác
                                 </p>
                               )}
@@ -361,24 +315,23 @@ export default function OrdersListPage() {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">
+                            <p className="font-medium text-gray-700">
                               {formatPrice(order.shipping_fee)}
                             </p>
                             {order.shipping_method && (
-                              <p className="text-xs text-gray-500">
-                                {order.shipping_method}
+                              <p className="text-xs text-gray-500 mt-1">
+                                🚚 {order.shipping_method}
                               </p>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell
-                          className="font-bold"
-                          style={{ color: "#FF6A00" }}
-                        >
-                          {formatPrice(order.total_amount)}
+                        <TableCell>
+                          <p className="font-bold text-orange-600 text-lg">
+                            {formatPrice(order.total_amount)}
+                          </p>
                         </TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm text-gray-600">
                           {formatDate(order.created_at)}
                         </TableCell>
                         <TableCell className="text-right">
@@ -390,10 +343,10 @@ export default function OrdersListPage() {
                                 `/dashboard/orders/${order.shop_order_id}`
                               )
                             }
-                            className="border-[#FFB38A] hover:bg-[#FFF0E0]"
-                            style={{ color: "#FF6A00" }}
+                            className="border-orange-200 hover:bg-orange-50 text-orange-600 hover:border-orange-300 transition-all duration-200"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 mr-1" />
+                            Xem
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -402,25 +355,30 @@ export default function OrdersListPage() {
                 </Table>
               </div>
 
-              {/* Modern Pagination */}
+              {/* Pagination */}
               {data.result.totalPages > 1 && (
-                <Pagination
-                  currentPage={data.result.currentPage}
-                  totalPages={data.result.totalPages}
-                  onPageChange={handlePageChange}
-                  totalElements={data.result.totalElements}
-                  pageSize={filters.limit || 12}
-                />
+                <div className="p-6 border-t border-orange-100 bg-linear-to-r from-orange-50/50 to-amber-50/50">
+                  <Pagination
+                    currentPage={data.result.currentPage}
+                    totalPages={data.result.totalPages}
+                    onPageChange={handlePageChange}
+                    totalElements={data.result.totalElements}
+                    pageSize={filters.limit || 12}
+                  />
+                </div>
               )}
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="h-16 w-16 text-gray-300 mb-4" />
-              <p className="text-gray-500 text-lg font-medium">
-                Không có đơn hàng nào
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-20 h-20 bg-linear-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center mb-4">
+                <Package className="h-10 w-10 text-orange-400" />
+              </div>
+              <p className="text-gray-600 text-lg font-medium mb-2">
+                Chưa có đơn hàng nào
               </p>
-              <p className="text-gray-400 text-sm mt-2">
-                Các đơn hàng sẽ xuất hiện tại đây khi có khách mua hàng
+              <p className="text-gray-400 text-sm max-w-md">
+                Các đơn hàng sẽ xuất hiện tại đây khi có khách mua hàng từ shop
+                của bạn
               </p>
             </div>
           )}

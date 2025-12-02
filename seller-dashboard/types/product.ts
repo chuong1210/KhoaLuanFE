@@ -72,6 +72,7 @@ export interface Product {
   create_date: string
   update_by: string
   update_date: string
+
 }
 
 export interface ProductDetail {
@@ -128,6 +129,8 @@ export interface UpdateProductPayload {
   }>
 }
 
+// types/product.ts - Add status to ProductFilters
+
 export interface ProductFilters {
   page?: number
   limit?: number
@@ -136,10 +139,10 @@ export interface ProductFilters {
   price_min?: number
   price_max?: number
   keywords?: string
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'popular'
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'popular' | 'best_sell'
+  status?: 'Pending' | 'Active' | 'Deleted' // ✨ MỚI
   cate_path?: string
 }
-
 
 // types/product.ts
 

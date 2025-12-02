@@ -4,7 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { AddressSelector } from "../components/address-selector";
+import { AddressSelector } from "../(dashboard)/dashboard/shop/components/address-selector";
 import { shopService } from "@/services/shop-service"; // Đảm bảo đường dẫn đúng
 import {
   Card,

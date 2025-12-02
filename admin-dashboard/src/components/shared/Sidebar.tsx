@@ -45,7 +45,7 @@ const menuItems = [
     href: "/dashboard/policies",
   },
   {
-    title: "Sản phẩm",
+    title: "Duyệt sản phẩm",
     icon: Package,
     href: "/dashboard/products",
   },

@@ -28,16 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShopSelect } from "@/components/ui/shop-select";
 import {
   usePendingProductsByShop,
@@ -47,6 +38,7 @@ import {
 import { transformImageUrl } from "@/features/products/services/productsApi";
 import { formatCurrency, cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ProductDetailDialog } from "@/components/products/poduct-detail-dialog";
 
 interface Product {
   id: string;
@@ -71,7 +63,7 @@ export default function ProductApprovalPage() {
     string | undefined
   >();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [viewProduct, setViewProduct] = useState<Product | null>(null);
+  const [viewProductId, setViewProductId] = useState<string | null>(null);
 
   const { data, isLoading } = usePendingProductsByShop({ page: 1, limit: 100 });
   const approveProduct = useApproveProduct();
@@ -445,7 +437,7 @@ export default function ProductApprovalPage() {
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => setViewProduct(product)}
+                            onClick={() => setViewProductId(product.id)}
                             className="shadow-lg backdrop-blur-sm bg-white/90"
                           >
                             <Eye className="h-4 w-4" />
@@ -527,138 +519,14 @@ export default function ProductApprovalPage() {
         </Card>
       )}
 
-      {/* View Product Dialog */}
-      <Dialog open={!!viewProduct} onOpenChange={() => setViewProduct(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Chi tiết sản phẩm</DialogTitle>
-            <DialogDescription>
-              Xem thông tin đầy đủ trước khi phê duyệt
-            </DialogDescription>
-          </DialogHeader>
-
-          {viewProduct && (
-            <ScrollArea className="max-h-[calc(90vh-200px)]">
-              <div className="space-y-6 pr-4">
-                {/* Product Image */}
-                <div className="relative h-80 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-lg">
-                  <img
-                    src={transformImageUrl(viewProduct.image)}
-                    alt={viewProduct.name}
-                    className=" object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.nextElementSibling?.classList.remove(
-                        "hidden"
-                      );
-                    }}
-                  />
-                </div>
-
-                {/* Product Info */}
-                <div>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-2xl text-gray-800 mb-2">
-                        {viewProduct.name}
-                      </h3>
-                      <p className="text-gray-600">
-                        {viewProduct.short_description}
-                      </p>
-                    </div>
-                    {viewProduct.rating && (
-                      <Badge className="bg-yellow-400 text-yellow-900">
-                        ⭐ {viewProduct.rating.average_rating.toFixed(1)} (
-                        {viewProduct.rating.total_reviews})
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <span className="text-3xl font-bold text-orange-vivid">
-                      {formatCurrency(viewProduct.min_price)}
-                    </span>
-                    {viewProduct.min_price !== viewProduct.max_price && (
-                      <>
-                        <span className="text-gray-400">-</span>
-                        <span className="text-2xl font-bold text-orange-vivid">
-                          {formatCurrency(viewProduct.max_price)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
-                      Mô tả chi tiết:
-                    </p>
-                    <div
-                      className="text-gray-600 leading-relaxed"
-                      dangerouslySetInnerHTML={{
-                        __html: viewProduct.description,
-                      }}
-                    />
-                  </div>
-
-                  {/* Meta Info */}
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-xs text-blue-700 font-medium">
-                        Shop ID
-                      </p>
-                      <p className="text-sm font-semibold text-blue-900 mt-1">
-                        {viewProduct.shop_id}
-                      </p>
-                    </div>
-                    <div className="bg-purple-50 rounded-lg p-3">
-                      <p className="text-xs text-purple-700 font-medium">
-                        Ngày tạo
-                      </p>
-                      <p className="text-sm font-semibold text-purple-900 mt-1">
-                        {new Date(viewProduct.create_date).toLocaleDateString(
-                          "vi-VN"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewProduct(null)}>
-              Đóng
-            </Button>
-            {viewProduct && (
-              <>
-                <Button
-                  onClick={() => {
-                    handleApprove(viewProduct.id, false);
-                    setViewProduct(null);
-                  }}
-                  variant="destructive"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Từ chối
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleApprove(viewProduct.id, true);
-                    setViewProduct(null);
-                  }}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Duyệt
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Product Detail Dialog */}
+      <ProductDetailDialog
+        productId={viewProductId}
+        open={!!viewProductId}
+        onClose={() => setViewProductId(null)}
+        onApprove={handleApprove}
+        isApproving={approveProduct.isPending}
+      />
     </div>
   );
 }

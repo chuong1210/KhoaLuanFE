@@ -7,6 +7,7 @@ import type {
   ShopOrderListItem,
   VoucherUsageDetail,
 } from "@/types/analytics";
+import { Console } from "console";
 
 const ANALYTICS_API = "http://localhost:9004/v1/shop";
 
@@ -21,6 +22,7 @@ export const analyticsService = {
     const response = await axiosInstance.get<{ result: ShopOverview }>(
       `${ANALYTICS_API}/overview?${params.toString()}`
     );
+    console.log(response.data.result)
     return response.data.result;
   },
 

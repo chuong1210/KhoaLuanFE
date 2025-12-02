@@ -24,6 +24,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/auth-slice";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { cookies } from "@/lib/utils/cookies";
 
 export function DashboardHeader() {
   const router = useRouter();
@@ -34,13 +35,15 @@ export function DashboardHeader() {
   const handleLogout = () => {
     dispatch(logout());
     router.push("/login");
+    cookies.remove("token");
   };
 
   return (
     <header
       className="sticky top-0 z-40 flex h-[72px] items-center justify-between border-b px-6"
       style={{
-        background: "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 50%, #FFFFFF 100%)",
+        background:
+          "linear-gradient(90deg, #FFF0E0 0%, #FFFFFF 50%, #FFFFFF 100%)",
         borderBottomColor: "rgba(255, 179, 138, 0.3)",
         boxShadow: "0 1px 3px rgba(255, 106, 0, 0.05)",
       }}
@@ -111,7 +114,9 @@ export function DashboardHeader() {
           <Bell className="h-5 w-5" />
           <span
             className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white"
-            style={{ background: "linear-gradient(135deg, #E65100 0%, #FF6A00 100%)" }}
+            style={{
+              background: "linear-gradient(135deg, #E65100 0%, #FF6A00 100%)",
+            }}
           >
             3
           </span>
@@ -135,7 +140,8 @@ export function DashboardHeader() {
                 <AvatarFallback
                   className="text-white font-semibold text-sm"
                   style={{
-                    background: "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
+                    background:
+                      "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
                   }}
                 >
                   {username?.[0]?.toUpperCase() || "U"}
@@ -153,7 +159,9 @@ export function DashboardHeader() {
           <DropdownMenuContent
             align="end"
             className="w-60 p-2 rounded-xl border-[#FFB38A]/30 shadow-lg"
-            style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FFF0E0 100%)" }}
+            style={{
+              background: "linear-gradient(180deg, #FFFFFF 0%, #FFF0E0 100%)",
+            }}
           >
             {/* User Info Header */}
             <div className="px-3 py-3 mb-2">
@@ -162,14 +170,17 @@ export function DashboardHeader() {
                   <AvatarFallback
                     className="text-white font-semibold"
                     style={{
-                      background: "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
+                      background:
+                        "linear-gradient(135deg, #FF6A00 0%, #FF8A33 100%)",
                     }}
                   >
                     {username?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-sm font-semibold text-[#1C1917]">{username || "Seller"}</p>
+                  <p className="text-sm font-semibold text-[#1C1917]">
+                    {username || "Seller"}
+                  </p>
                   <p className="text-xs text-[#78716C]">seller@example.com</p>
                 </div>
               </div>
@@ -185,8 +196,12 @@ export function DashboardHeader() {
                 <User className="h-4 w-4 text-[#FF6A00]" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[#1C1917]">Hồ sơ của tôi</p>
-                <p className="text-[10px] text-[#78716C]">Xem và chỉnh sửa thông tin</p>
+                <p className="text-sm font-medium text-[#1C1917]">
+                  Hồ sơ của tôi
+                </p>
+                <p className="text-[10px] text-[#78716C]">
+                  Xem và chỉnh sửa thông tin
+                </p>
               </div>
             </DropdownMenuItem>
 
@@ -199,7 +214,9 @@ export function DashboardHeader() {
               </div>
               <div>
                 <p className="text-sm font-medium text-[#1C1917]">Cài đặt</p>
-                <p className="text-[10px] text-[#78716C]">Tùy chỉnh tài khoản</p>
+                <p className="text-[10px] text-[#78716C]">
+                  Tùy chỉnh tài khoản
+                </p>
               </div>
             </DropdownMenuItem>
 
@@ -214,7 +231,9 @@ export function DashboardHeader() {
               </div>
               <div>
                 <p className="text-sm font-medium text-[#E65100]">Đăng xuất</p>
-                <p className="text-[10px] text-[#78716C]">Thoát khỏi tài khoản</p>
+                <p className="text-[10px] text-[#78716C]">
+                  Thoát khỏi tài khoản
+                </p>
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
