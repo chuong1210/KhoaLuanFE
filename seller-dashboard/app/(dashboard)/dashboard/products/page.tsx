@@ -158,7 +158,6 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
-        {/* Header with Modern Gradient */}
         <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-orange-400 via-orange-500 to-orange-700 p-10 text-white shadow-2xl">
           {/* Animated Background Elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-48 translate-x-48 animate-pulse"></div>
@@ -376,7 +375,6 @@ export default function ProductsPage() {
                         key={product.id}
                         className="group relative overflow-hidden border-2 border-slate-100 hover:border-indigo-300 transition-all duration-300 hover:shadow-2xl rounded-2xl bg-white"
                       >
-                        {/* Product Image */}
                         <div className="relative h-44 overflow-hidden bg-linear-to-br from-slate-100 to-slate-50">
                           <img
                             src={imageUrl}

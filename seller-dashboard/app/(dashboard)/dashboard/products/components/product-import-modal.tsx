@@ -38,18 +38,18 @@ interface ImportRow {
   description: string;
   short_description: string;
   category_id: string;
-  image_path: string; // Đường dẫn ảnh chính
-  media_paths: string; // Các đường dẫn ảnh phụ, ngăn cách bởi dấu ";"
-  option_group_1_name: string; // VD: Màu sắc
-  option_group_1_values: string; // VD: Đỏ;Xanh;Vàng
-  option_group_1_images: string; // Đường dẫn ảnh cho từng giá trị, ngăn cách bởi ";"
-  option_group_2_name: string; // VD: Size
-  option_group_2_values: string; // VD: S;M;L;XL
-  sku_price: string; // Giá cho tất cả SKU (nếu đồng giá) hoặc để trống
-  sku_quantity: string; // Kho cho tất cả SKU
-  sku_weight: string; // Cân nặng
-  allow_return: string; // "Có" hoặc "Không"
-  allow_check: string; // "Có" hoặc "Không"
+  image_path: string;
+  media_paths: string;
+  option_group_1_name: string;
+  option_group_1_values: string;
+  option_group_1_images: string;
+  option_group_2_name: string;
+  option_group_2_values: string;
+  sku_price: string;
+  sku_quantity: string;
+  sku_weight: string;
+  allow_return: string;
+  allow_check: string;
 }
 
 interface ImportResult {
@@ -74,6 +74,19 @@ export function ImportProductDialog() {
     queryKey: ["categories"],
     queryFn: () => productService.getCategories(),
   });
+
+  const generateSkuCode = (productName: string): string => {
+    const prefix = productName
+      .substring(0, 3)
+      .toUpperCase()
+      .replace(/[^A-Z]/g, ""); // Chỉ lấy chữ cái
+
+    const randomNumber = Math.floor(Math.random() * 10000);
+
+    return `${prefix.padEnd(3, "X")}-${randomNumber
+      .toString()
+      .padStart(4, "0")}`;
+  };
 
   // Download template Excel
   const downloadTemplate = () => {
@@ -183,6 +196,10 @@ export function ImportProductDialog() {
       {
         "Hướng dẫn":
           "- Nếu có 2 nhóm phân loại, hệ thống tự động tạo tổ hợp SKU",
+      },
+      {
+        "Hướng dẫn":
+          "- SKU code sẽ được tự động tạo theo format: [3 CHỮ CÁI]-[4 SỐ]",
       },
     ];
 
@@ -387,12 +404,13 @@ export function ImportProductDialog() {
         });
       }
 
-      // Generate SKU combinations (Cartesian product)
+      // Generate SKU combinations with SKU code
       const generateSkuCombinations = () => {
         if (optionGroups.length === 0) {
+          // Không có phân loại - tạo 1 SKU mặc định
           return [
             {
-              sku_code: "",
+              sku_code: generateSkuCode(row.name),
               price: parseFloat(row.sku_price) || 0,
               quantity: parseInt(row.sku_quantity) || 0,
               weight: parseFloat(row.sku_weight) || 0,
@@ -420,7 +438,7 @@ export function ImportProductDialog() {
         const combinations = cartesian(valueArrays);
 
         return combinations.map((combo) => ({
-          sku_code: "",
+          sku_code: generateSkuCode(row.name), // Tạo SKU code riêng cho mỗi biến thể
           price: parseFloat(row.sku_price) || 0,
           quantity: parseInt(row.sku_quantity) || 0,
           weight: parseFloat(row.sku_weight) || 0,
