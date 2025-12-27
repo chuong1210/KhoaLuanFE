@@ -29,10 +29,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useProductDetail } from "@/features/products/hooks/useProducts";
 import { transformImageUrl } from "@/features/products/services/productsApi";
 import { formatCurrency, cn } from "@/lib/utils";
-import { Separator } from "@radix-ui/react-select";
 
 interface ProductDetailDialogProps {
   productId: string | null;
@@ -102,10 +102,7 @@ export function ProductDetailDialog({
                   {/* Main Image */}
                   <div className="relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-lg">
                     <img
-                      src={transformImageUrl(
-                        allImages[activeImageIndex] ??
-                          "https://static.vecteezy.com/system/resources/previews/008/516/935/non_2x/no-search-found-flat-illustration-concept-vector.jpg"
-                      )}
+                      src={transformImageUrl(allImages[activeImageIndex])}
                       alt={product.name}
                       className="object-contain w-full h-full"
                     />
@@ -126,10 +123,7 @@ export function ProductDetailDialog({
                           )}
                         >
                           <img
-                            src={transformImageUrl(
-                              img ??
-                                "https://static.vecteezy.com/system/resources/previews/008/516/935/non_2x/no-search-found-flat-illustration-concept-vector.jpg"
-                            )}
+                            src={transformImageUrl(img)}
                             alt={`${product.name} ${idx + 1}`}
                             className="object-cover w-full h-full"
                           />
@@ -280,7 +274,7 @@ export function ProductDetailDialog({
                               variant={
                                 product.delete_status === "Active"
                                   ? "success"
-                                  : "error"
+                                  : "destructive"
                               }
                               className="text-xs"
                             >
@@ -491,7 +485,7 @@ export function ProductDetailDialog({
                                 {/* Availability Badge */}
                                 <Badge
                                   variant={
-                                    sku.quantity > 0 ? "success" : "error"
+                                    sku.quantity > 0 ? "success" : "destructive"
                                   }
                                 >
                                   {sku.quantity > 0 ? "Còn hàng" : "Hết hàng"}

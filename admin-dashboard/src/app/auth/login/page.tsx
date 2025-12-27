@@ -139,13 +139,7 @@ export default function LoginPage() {
               </Button>
 
               {/* Admin Credentials */}
-              <div className="mt-4 p-3 rounded-lg bg-orange-apricot/50 text-sm">
-                <p className="font-medium text-gray-700 mb-1">
-                  Admin credentials:
-                </p>
-                <p className="text-gray-600">Username: hienadmin</p>
-                <p className="text-gray-600">Password: Hienlazada#1</p>
-              </div>
+             
             </form>
           </CardContent>
         </Card>
